@@ -1,0 +1,3 @@
+[submodule "lrama"]
+	path = lrama
+	url = https://github.com/ruby/lrama.git
