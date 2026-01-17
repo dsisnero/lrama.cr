@@ -30,7 +30,11 @@ module Lrama
         return true
       end
       if token_value == "%%"
-        advance_section
+        if @section == :rules
+          capture_epilogue
+        else
+          advance_section
+        end
         return true
       end
       false
@@ -58,7 +62,8 @@ module Lrama
 
       handled = handle_declaration_with_param(token_value) ||
                 handle_declaration_without_param(token_value) ||
-                handle_declaration_lists(token_value)
+                handle_declaration_lists(token_value) ||
+                handle_declaration_ident(token_value)
       return handled if handled
 
       handle_precedence_or_start(token_value)
@@ -110,6 +115,24 @@ module Lrama
         parse_type_declarations
       when "%nterm"
         parse_nterm_declarations
+      else
+        return false
+      end
+      true
+    end
+
+    private def handle_declaration_ident(token_value : String | Symbol)
+      case token_value
+      when "%after-shift"
+        parse_after_hook(:after_shift)
+      when "%before-reduce"
+        parse_after_hook(:before_reduce)
+      when "%after-reduce"
+        parse_after_hook(:after_reduce)
+      when "%after-shift-error-token"
+        parse_after_hook(:after_shift_error_token)
+      when "%after-pop-stack"
+        parse_after_hook(:after_pop_stack)
       else
         return false
       end
@@ -238,6 +261,37 @@ module Lrama
     private def parse_start
       token = expect_token(:IDENTIFIER)
       @grammar.start_symbol = token[1].s_value
+    end
+
+    private def parse_after_hook(kind : Symbol)
+      token = expect_token(:IDENTIFIER)
+      value = token[1].s_value
+      case kind
+      when :after_shift
+        @grammar.after_shift = value
+      when :before_reduce
+        @grammar.before_reduce = value
+      when :after_reduce
+        @grammar.after_reduce = value
+      when :after_shift_error_token
+        @grammar.after_shift_error_token = value
+      when :after_pop_stack
+        @grammar.after_pop_stack = value
+      end
+    end
+
+    private def capture_epilogue
+      begin_c_declaration("\\Z")
+      token = @lexer.next_token
+      if token && token[0] == :C_DECLARATION
+        code = token[1].as(Lexer::Token::UserCode)
+        @grammar.epilogue = code.code
+        @grammar.epilogue_first_lineno = code.location.first_line
+      else
+        raise ParseError.new("Expected epilogue user code")
+      end
+      end_c_declaration
+      @section = :epilogue
     end
 
     private def parse_union

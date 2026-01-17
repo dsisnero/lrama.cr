@@ -127,6 +127,10 @@ module Lrama
 
       code = io.to_s
 
+      if end_sym == "\\Z"
+        return {:C_DECLARATION, Token::UserCode.new(code, location: location)}
+      end
+
       raise ParseError.new(location.generate_error_message("Unexpected code: #{code}"))
     end
 
