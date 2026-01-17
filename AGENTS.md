@@ -12,6 +12,16 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
+## Formatting and Linting
+
+Run formatting and linting as part of normal workflow for Crystal changes:
+
+```bash
+crystal tool format src spec
+ameba --fix src spec
+ameba src spec
+```
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
@@ -37,4 +47,3 @@ bd sync               # Sync with git
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
-
