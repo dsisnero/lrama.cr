@@ -47,4 +47,31 @@ describe Lrama::GrammarParser do
     grammar.locations?.should be_true
     grammar.start_symbol.should eq "program"
   end
+
+  it "captures after hooks and epilogue" do
+    text = [
+      "%after-shift after_shift_cb",
+      "%before-reduce before_reduce_cb",
+      "%after-reduce after_reduce_cb",
+      "%after-shift-error-token after_shift_error_cb",
+      "%after-pop-stack after_pop_cb",
+      "%%",
+      "rule: ;",
+      "%%",
+      "epilogue code",
+      "",
+    ].join("\n")
+    grammar_file = Lrama::Lexer::GrammarFile.new("hooks.y", text)
+    lexer = Lrama::Lexer.new(grammar_file)
+    parser = Lrama::GrammarParser.new(lexer)
+    grammar = parser.parse
+
+    grammar.after_shift.should eq "after_shift_cb"
+    grammar.before_reduce.should eq "before_reduce_cb"
+    grammar.after_reduce.should eq "after_reduce_cb"
+    grammar.after_shift_error_token.should eq "after_shift_error_cb"
+    grammar.after_pop_stack.should eq "after_pop_cb"
+    grammar.epilogue.should eq "\nepilogue code\n"
+    grammar.epilogue_first_lineno.should eq 8
+  end
 end

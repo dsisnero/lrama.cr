@@ -22,6 +22,13 @@ module Lrama
     getter printers : Array(CodeDeclaration)
     getter destructors : Array(CodeDeclaration)
     getter error_tokens : Array(CodeDeclaration)
+    property after_shift : String?
+    property before_reduce : String?
+    property after_reduce : String?
+    property after_shift_error_token : String?
+    property after_pop_stack : String?
+    property epilogue : String?
+    property epilogue_first_lineno : Int32?
 
     def initialize
       @declarations_tokens = [] of Lexer::TokenValue
@@ -46,6 +53,13 @@ module Lrama
       @printers = [] of CodeDeclaration
       @destructors = [] of CodeDeclaration
       @error_tokens = [] of CodeDeclaration
+      @after_shift = nil
+      @before_reduce = nil
+      @after_reduce = nil
+      @after_shift_error_token = nil
+      @after_pop_stack = nil
+      @epilogue = nil
+      @epilogue_first_lineno = nil
     end
 
     def tokens_for(section : Symbol)
