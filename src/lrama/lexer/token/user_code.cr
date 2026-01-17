@@ -7,6 +7,10 @@ module Lrama
         def references
           [] of String
         end
+
+        def code
+          s_value
+        end
       end
     end
   end
