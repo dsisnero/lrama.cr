@@ -1,0 +1,13 @@
+name: lrama
+version: 0.1.0
+description: "Crystal port of Ruby's lrama parser generator"
+license: MIT
+crystal: ">= 1.9.0"
+
+targets:
+  lrama:
+    main: src/lrama/main.cr
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
