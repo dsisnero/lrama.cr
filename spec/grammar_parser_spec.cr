@@ -14,6 +14,14 @@ describe Lrama::GrammarParser do
     grammar.define["api.pure"].should be_nil
     grammar.define["parse.error"].should eq "verbose"
     grammar.define["api.prefix"].should eq "prefix"
+    grammar.token_declarations.size.should be > 0
+    first_decl = grammar.token_declarations.first
+    first_decl.id.s_value.should eq "EOI"
+    first_decl.token_id.should eq 0
+    first_decl.alias_name.should eq "\"EOI\""
+    grammar.type_declarations.size.should be > 0
+    grammar.type_declarations.first.tokens.first.s_value.should eq "class"
+    grammar.precedence_declarations.size.should be > 0
     grammar.declarations_tokens.should_not be_empty
     grammar.rules_tokens.should_not be_empty
     grammar.epilogue_tokens.should be_empty
@@ -28,5 +36,6 @@ describe Lrama::GrammarParser do
 
     grammar.define["api.value.type"].should eq "int"
     grammar.locations?.should be_true
+    grammar.start_symbol.should eq "program"
   end
 end
