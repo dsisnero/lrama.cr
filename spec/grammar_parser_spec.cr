@@ -22,6 +22,15 @@ describe Lrama::GrammarParser do
     grammar.type_declarations.size.should be > 0
     grammar.type_declarations.first.tokens.first.s_value.should eq "class"
     grammar.precedence_declarations.size.should be > 0
+    union_code = grammar.union_code
+    union_code.should_not be_nil
+    union_code.try(&.code.includes?("int i;")).should be_true
+    grammar.lex_param.should eq "struct lex_params *p"
+    grammar.parse_param.should eq "struct parse_params *p"
+    initial_action = grammar.initial_action
+    initial_action.should_not be_nil
+    initial_action.try(&.code.includes?("initial_action_func")).should be_true
+    grammar.printers.size.should eq 2
     grammar.declarations_tokens.should_not be_empty
     grammar.rules_tokens.should_not be_empty
     grammar.epilogue_tokens.should be_empty

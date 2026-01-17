@@ -56,6 +56,39 @@ module Lrama
         return true
       end
 
+      handled = handle_declaration_with_param(token_value) ||
+                handle_declaration_without_param(token_value) ||
+                handle_declaration_lists(token_value)
+      return handled if handled
+
+      handle_precedence_or_start(token_value)
+    end
+
+    private def handle_declaration_with_param(token_value : String | Symbol)
+      case token_value
+      when "%union"
+        parse_union
+      when "%destructor"
+        parse_code_declaration(@grammar.destructors)
+      when "%printer"
+        parse_code_declaration(@grammar.printers)
+      when "%error-token"
+        parse_code_declaration(@grammar.error_tokens)
+      when "%lex-param"
+        parse_param_assignment(:lex_param)
+      when "%parse-param"
+        parse_param_assignment(:parse_param)
+      when "%initial-action"
+        parse_initial_action
+      when "%code"
+        parse_percent_code
+      else
+        return false
+      end
+      true
+    end
+
+    private def handle_declaration_without_param(token_value : String | Symbol)
       case token_value
       when "%require"
         parse_require
@@ -63,12 +96,28 @@ module Lrama
         parse_define
       when "%expect"
         parse_expect
+      else
+        return false
+      end
+      true
+    end
+
+    private def handle_declaration_lists(token_value : String | Symbol)
+      case token_value
       when "%token"
         parse_token_declarations
       when "%type"
         parse_type_declarations
       when "%nterm"
         parse_nterm_declarations
+      else
+        return false
+      end
+      true
+    end
+
+    private def handle_precedence_or_start(token_value : String | Symbol)
+      case token_value
       when "%left", "%right", "%precedence", "%nonassoc"
         parse_precedence_kind(token_value.as(String))
       when "%start"
@@ -76,7 +125,6 @@ module Lrama
       else
         return false
       end
-
       true
     end
 
@@ -192,6 +240,38 @@ module Lrama
       @grammar.start_symbol = token[1].s_value
     end
 
+    private def parse_union
+      @grammar.union_code = parse_param_block
+    end
+
+    private def parse_percent_code
+      id_token = expect_token(:IDENTIFIER)
+      code = parse_param_block
+      @grammar.percent_codes << Grammar::PercentCode.new(id_token[1].s_value, code)
+    end
+
+    private def parse_code_declaration(target : Array(Grammar::CodeDeclaration))
+      code = parse_param_block
+      targets = parse_ident_or_tags
+      target << Grammar::CodeDeclaration.new(targets, code) unless targets.empty?
+    end
+
+    private def parse_param_assignment(kind : Symbol)
+      params = parse_param_blocks
+      return if params.empty?
+
+      value = params.last.code
+      if kind == :lex_param
+        @grammar.lex_param = value
+      else
+        @grammar.parse_param = value
+      end
+    end
+
+    private def parse_initial_action
+      @grammar.initial_action = parse_param_block
+    end
+
     private def parse_type_declarations
       parse_symbol_declarations(@grammar.type_declarations)
     end
@@ -213,6 +293,55 @@ module Lrama
           :nonassoc
         end
       parse_precedence_declarations(kind)
+    end
+
+    private def parse_param_blocks
+      params = [] of Lexer::Token::UserCode
+      loop do
+        token = next_token
+        break unless token
+
+        if token[0] == "{"
+          unread_token(token)
+          params << parse_param_block
+          next
+        end
+
+        unread_token(token)
+        break
+      end
+      params
+    end
+
+    private def parse_param_block
+      expect_token("{")
+      begin_c_declaration("}")
+      code_token = expect_token(:C_DECLARATION)[1].as(Lexer::Token::UserCode)
+      end_c_declaration
+      expect_token("}")
+      code_token
+    end
+
+    private def parse_ident_or_tags
+      targets = [] of Lexer::Token::Base
+      loop do
+        token = next_token
+        break unless token
+
+        if token[0] == :TAG
+          targets << token[1].as(Lexer::Token::Tag)
+          next
+        end
+
+        if symbol = symbol_token_from(token)
+          targets << symbol
+          next
+        end
+
+        unread_token(token)
+        break
+      end
+      targets
     end
 
     private def parse_token_declarations
