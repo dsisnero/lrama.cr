@@ -9,6 +9,11 @@ module Lrama
     property expect : Int32?
     property? no_stdlib : Bool
     property? locations : Bool
+    getter token_declarations : Array(TokenDeclaration)
+    getter type_declarations : Array(SymbolGroup)
+    getter nterm_declarations : Array(SymbolGroup)
+    getter precedence_declarations : Array(PrecedenceDeclaration)
+    property start_symbol : String?
 
     def initialize
       @declarations_tokens = [] of Lexer::TokenValue
@@ -20,6 +25,11 @@ module Lrama
       @expect = nil
       @no_stdlib = false
       @locations = false
+      @token_declarations = [] of TokenDeclaration
+      @type_declarations = [] of SymbolGroup
+      @nterm_declarations = [] of SymbolGroup
+      @precedence_declarations = [] of PrecedenceDeclaration
+      @start_symbol = nil
     end
 
     def tokens_for(section : Symbol)
@@ -32,6 +42,38 @@ module Lrama
         epilogue_tokens
       else
         raise "Unknown section: #{section}"
+      end
+    end
+
+    struct TokenDeclaration
+      getter id : Lexer::Token::Base
+      getter token_id : Int32?
+      getter alias_name : String?
+      getter tag : Lexer::Token::Tag?
+
+      def initialize(
+        @id : Lexer::Token::Base,
+        @token_id : Int32? = nil,
+        @alias_name : String? = nil,
+        @tag : Lexer::Token::Tag? = nil,
+      )
+      end
+    end
+
+    struct SymbolGroup
+      getter tag : Lexer::Token::Tag?
+      getter tokens : Array(Lexer::Token::Base)
+
+      def initialize(@tag : Lexer::Token::Tag?, @tokens : Array(Lexer::Token::Base))
+      end
+    end
+
+    struct PrecedenceDeclaration
+      getter kind : Symbol
+      getter tag : Lexer::Token::Tag?
+      getter tokens : Array(Lexer::Token::Base)
+
+      def initialize(@kind : Symbol, @tag : Lexer::Token::Tag?, @tokens : Array(Lexer::Token::Base))
       end
     end
   end

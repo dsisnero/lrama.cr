@@ -16,45 +16,68 @@ module Lrama
     end
 
     private def handle_token(token : Lexer::TokenValue)
+      return if handle_section_token(token)
+      return if handle_inline_code(token)
+      return if handle_declaration_token(token)
+      @grammar.tokens_for(@section) << token
+    end
+
+    private def handle_section_token(token : Lexer::TokenValue)
       token_value = token[0]
       if token_value == "%{"
         begin_c_declaration("%}")
         capture_c_declaration(:prologue)
-        return
+        return true
       end
-
       if token_value == "%%"
         advance_section
-        return
+        return true
+      end
+      false
+    end
+
+    private def handle_inline_code(token : Lexer::TokenValue)
+      return false unless token[0] == "{"
+      begin_c_declaration("}")
+      capture_c_declaration(:inline)
+      true
+    end
+
+    private def handle_declaration_token(token : Lexer::TokenValue)
+      return false unless @section == :declarations
+
+      token_value = token[0]
+      if token_value == "%no-stdlib"
+        @grammar.no_stdlib = true
+        return true
+      end
+      if token_value == "%locations"
+        @grammar.locations = true
+        return true
       end
 
-      if token_value == "{"
-        begin_c_declaration("}")
-        capture_c_declaration(:inline)
-        return
+      case token_value
+      when "%require"
+        parse_require
+      when "%define"
+        parse_define
+      when "%expect"
+        parse_expect
+      when "%token"
+        parse_token_declarations
+      when "%type"
+        parse_type_declarations
+      when "%nterm"
+        parse_nterm_declarations
+      when "%left", "%right", "%precedence", "%nonassoc"
+        parse_precedence_kind(token_value.as(String))
+      when "%start"
+        parse_start
+      else
+        return false
       end
 
-      if @section == :declarations
-        case token_value
-        when "%require"
-          parse_require
-          return
-        when "%define"
-          parse_define
-          return
-        when "%expect"
-          parse_expect
-          return
-        when "%no-stdlib"
-          @grammar.no_stdlib = true
-          return
-        when "%locations"
-          @grammar.locations = true
-          return
-        end
-      end
-
-      @grammar.tokens_for(@section) << token
+      true
     end
 
     private def begin_c_declaration(end_symbol : String)
@@ -162,6 +185,185 @@ module Lrama
       raise ParseError.new("Expected #{kind}") unless token
       return token if token[0] == kind
       raise ParseError.new("Expected #{kind}, got #{token[0]}")
+    end
+
+    private def parse_start
+      token = expect_token(:IDENTIFIER)
+      @grammar.start_symbol = token[1].s_value
+    end
+
+    private def parse_type_declarations
+      parse_symbol_declarations(@grammar.type_declarations)
+    end
+
+    private def parse_nterm_declarations
+      parse_symbol_declarations(@grammar.nterm_declarations)
+    end
+
+    private def parse_precedence_kind(token_value : String)
+      kind =
+        case token_value
+        when "%left"
+          :left
+        when "%right"
+          :right
+        when "%precedence"
+          :precedence
+        else
+          :nonassoc
+        end
+      parse_precedence_declarations(kind)
+    end
+
+    private def parse_token_declarations
+      current_tag = nil
+      loop do
+        token = next_token
+        break unless token
+
+        if token[0] == :TAG
+          current_tag = token[1].as(Lexer::Token::Tag)
+          next
+        end
+
+        if id_token = id_token_from(token)
+          token_id = parse_optional_integer
+          alias_name = parse_optional_alias
+          @grammar.token_declarations << Grammar::TokenDeclaration.new(
+            id: id_token,
+            token_id: token_id,
+            alias_name: alias_name,
+            tag: current_tag
+          )
+          next
+        end
+
+        unread_token(token)
+        break
+      end
+    end
+
+    private def parse_optional_integer
+      token = next_token
+      return unless token
+      if token[0] == :INTEGER
+        token[1].as(Lexer::Token::Int).value
+      else
+        unread_token(token)
+        nil
+      end
+    end
+
+    private def parse_optional_alias
+      token = next_token
+      return unless token
+      if token[0] == :STRING
+        token[1].s_value
+      else
+        unread_token(token)
+        nil
+      end
+    end
+
+    private def parse_symbol_declarations(target : Array(Grammar::SymbolGroup))
+      loop do
+        token = next_token
+        break unless token
+
+        if token[0] == :TAG
+          tag = token[1].as(Lexer::Token::Tag)
+          tokens = parse_symbol_list
+          target << Grammar::SymbolGroup.new(tag, tokens) unless tokens.empty?
+          next
+        end
+
+        if symbol = symbol_token_from(token)
+          tokens = [symbol] + parse_symbol_list
+          target << Grammar::SymbolGroup.new(nil, tokens)
+          next
+        end
+
+        unread_token(token)
+        break
+      end
+    end
+
+    private def parse_symbol_list
+      tokens = [] of Lexer::Token::Base
+      loop do
+        token = next_token
+        break unless token
+
+        if token[0] == :TAG
+          unread_token(token)
+          break
+        end
+
+        if symbol = symbol_token_from(token)
+          tokens << symbol
+          next
+        end
+
+        unread_token(token)
+        break
+      end
+      tokens
+    end
+
+    private def parse_precedence_declarations(kind : Symbol)
+      loop do
+        token = next_token
+        break unless token
+
+        if token[0] == :TAG
+          tag = token[1].as(Lexer::Token::Tag)
+          tokens = parse_id_list
+          @grammar.precedence_declarations << Grammar::PrecedenceDeclaration.new(kind, tag, tokens) unless tokens.empty?
+          next
+        end
+
+        if id = id_token_from(token)
+          tokens = [id] + parse_id_list
+          @grammar.precedence_declarations << Grammar::PrecedenceDeclaration.new(kind, nil, tokens)
+          next
+        end
+
+        unread_token(token)
+        break
+      end
+    end
+
+    private def parse_id_list
+      tokens = [] of Lexer::Token::Base
+      loop do
+        token = next_token
+        break unless token
+
+        if token[0] == :TAG
+          unread_token(token)
+          break
+        end
+
+        if id = id_token_from(token)
+          tokens << id
+          next
+        end
+
+        unread_token(token)
+        break
+      end
+      tokens
+    end
+
+    private def symbol_token_from(token : Lexer::TokenValue)
+      return token[1] if token[0] == :IDENTIFIER || token[0] == :CHARACTER
+      if token[0] == :STRING
+        return Lexer::Token::Ident.new(token[1].s_value, token[1].location)
+      end
+    end
+
+    private def id_token_from(token : Lexer::TokenValue)
+      return token[1] if token[0] == :IDENTIFIER || token[0] == :CHARACTER
     end
   end
 end
