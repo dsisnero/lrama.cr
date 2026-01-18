@@ -27,6 +27,7 @@ describe Lrama::Warnings do
   it "emits name conflicts for parameterized rules" do
     grammar = parse_grammar([
       "%token list",
+      "%token term",
       "%rule list(X): X",
       "%%",
       "expr: list(term);",

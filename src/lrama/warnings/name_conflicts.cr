@@ -21,7 +21,9 @@ module Lrama
         names = Set(String).new
         grammar.terms.each do |term|
           names << term.id.s_value
-          names << term.alias_name if term.alias_name
+          if alias_name = term.alias_name
+            names << alias_name
+          end
         end
         grammar.nterms.each do |nterm|
           names << nterm.id.s_value
