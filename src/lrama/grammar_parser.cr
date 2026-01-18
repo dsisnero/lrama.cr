@@ -67,7 +67,7 @@ module Lrama
       token_value = token[0]
       if token_value == "%{"
         begin_c_declaration("%}")
-        capture_c_declaration(:prologue)
+        capture_c_declaration(:prologue, token[1].as(Lexer::Token::Token).location)
         return true
       end
       if token_value == "%%"
@@ -250,7 +250,7 @@ module Lrama
       @lexer.end_symbol = nil
     end
 
-    private def capture_c_declaration(kind : Symbol)
+    private def capture_c_declaration(kind : Symbol, start_location : Lexer::Location? = nil)
       token = @lexer.next_token
       raise ParseError.new("Unexpected EOF while parsing user code") unless token
       unless token[0] == :C_DECLARATION
@@ -258,7 +258,9 @@ module Lrama
       end
 
       if kind == :prologue
-        @grammar.prologue = token[1].as(Lexer::Token::UserCode).code
+        code = token[1].as(Lexer::Token::UserCode)
+        @grammar.prologue = code.code
+        @grammar.prologue_first_lineno = start_location.try(&.first_line) || code.location.first_line
         closing = next_token
         if closing
           unless closing[0] == "%}"
