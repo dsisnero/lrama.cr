@@ -11,6 +11,10 @@ module Lrama
         @lineno : Int32,
       )
       end
+
+      def translated_code(tag : Lexer::Token::Tag)
+        Code::PrinterCode.new(:error_token, token_code, tag).translated_code
+      end
     end
   end
 end
