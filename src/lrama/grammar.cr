@@ -17,6 +17,11 @@ require "./grammar/symbols"
 
 module Lrama
   class Grammar
+    @internal_location : Lexer::Location?
+    @eof_symbol : Grammar::Symbol?
+    @error_symbol : Grammar::Symbol?
+    @undef_symbol : Grammar::Symbol?
+    @accept_symbol : Grammar::Symbol?
     getter declarations_tokens : Array(Lexer::TokenValue)
     getter rules_tokens : Array(Lexer::TokenValue)
     getter epilogue_tokens : Array(Lexer::TokenValue)
@@ -56,6 +61,9 @@ module Lrama
     property epilogue_first_lineno : Int32?
     getter aux : Grammar::Auxiliary
     property union : Grammar::Union?
+    getter sym_to_rules : Hash(Int32, Array(Grammar::Rule))
+    getter rule_counter : Grammar::Counter
+    getter midrule_action_counter : Grammar::Counter
 
     def initialize
       @declarations_tokens = [] of Lexer::TokenValue
@@ -97,6 +105,14 @@ module Lrama
       @epilogue_first_lineno = nil
       @aux = Grammar::Auxiliary.new
       @union = nil
+      @sym_to_rules = {} of Int32 => Array(Grammar::Rule)
+      @rule_counter = Grammar::Counter.new(0)
+      @midrule_action_counter = Grammar::Counter.new(1)
+      @internal_location = nil
+      @eof_symbol = nil
+      @error_symbol = nil
+      @undef_symbol = nil
+      @accept_symbol = nil
     end
 
     def add_parameterized_rule(rule : Parameterized::Rule)
@@ -189,12 +205,237 @@ module Lrama
       symbols_resolver.find_symbol_by_id!(id)
     end
 
+    def token_to_symbol(token : Lexer::Token::Base)
+      symbols_resolver.token_to_symbol(token)
+    end
+
     def fill_symbol_number
       symbols_resolver.fill_symbol_number
     end
 
     def sort_symbols_by_number!
       symbols_resolver.sort_by_number!
+    end
+
+    def append_special_symbols
+      term = add_term(
+        Lexer::Token::Ident.new("YYEOF", location: internal_location),
+        "\"end of file\"",
+        nil,
+        0
+      )
+      term.number = 0
+      term.eof_symbol = true
+      @eof_symbol = term
+
+      term = add_term(
+        Lexer::Token::Ident.new("YYerror", location: internal_location),
+        "error"
+      )
+      term.number = 1
+      term.error_symbol = true
+      @error_symbol = term
+
+      term = add_term(
+        Lexer::Token::Ident.new("YYUNDEF", location: internal_location),
+        "\"invalid token\""
+      )
+      term.number = 2
+      term.undef_symbol = true
+      @undef_symbol = term
+
+      term = add_nterm(Lexer::Token::Ident.new("$accept", location: internal_location))
+      term.accept_symbol = true
+      @accept_symbol = term
+    end
+
+    def resolve_inline_rules
+      while @rule_builders.any?(&.has_inline_rules?)
+        @rule_builders = @rule_builders.flat_map do |builder|
+          if builder.has_inline_rules?
+            Inline::Resolver.new(builder).resolve
+          else
+            [builder]
+          end
+        end
+      end
+    end
+
+    def normalize_rules
+      add_accept_rule
+      setup_rules
+      @rule_builders.each do |builder|
+        builder.rules.each do |rule|
+          lhs_token = rule._lhs
+          add_nterm(lhs_token, nil, rule.lhs_tag) if lhs_token
+          @rules << rule
+        end
+      end
+      @rules.sort_by! { |rule| rule.id || 0 }
+    end
+
+    def setup_rules
+      @rule_builders.each(&.setup_rules)
+    end
+
+    def add_accept_rule
+      start = start_rule_token
+      lineno = start.try(&.line) || 0
+      accept = @accept_symbol
+      eof = @eof_symbol
+      raise "Special symbols not initialized" unless accept && eof
+      @rules << Rule.new(
+        id: @rule_counter.increment,
+        _lhs: accept.id,
+        _rhs: [start, eof.id],
+        token_code: nil,
+        lineno: lineno
+      )
+    end
+
+    def collect_symbols
+      @rules.flat_map(&._rhs).each do |token|
+        case token
+        when Lexer::Token::Char
+          add_term(token)
+        when Lexer::Token::Base
+          # skip
+        else
+          raise "Unknown class: #{token}"
+        end
+      end
+    end
+
+    def set_lhs_and_rhs
+      @rules.each do |rule|
+        lhs_token = rule._lhs
+        next unless lhs_token
+        rule.lhs = token_to_symbol(lhs_token)
+        rule.rhs = rule._rhs.map { |token| token_to_symbol(token) }
+      end
+    end
+
+    def fill_default_precedence
+      @rules.each do |rule|
+        next if rule.precedence_sym
+        precedence_sym = nil
+        rule.rhs.each do |sym|
+          precedence_sym = sym if sym.term?
+        end
+        rule.precedence_sym = precedence_sym
+      end
+    end
+
+    def fill_symbols
+      fill_symbol_number
+      symbols_resolver.fill_nterm_type(@types)
+      symbols_resolver.fill_printer(build_printers)
+      symbols_resolver.fill_destructor(build_destructors)
+      symbols_resolver.fill_error_token(build_error_tokens)
+      sort_symbols_by_number!
+    end
+
+    def fill_sym_to_rules
+      @rules.each do |rule|
+        lhs = rule.lhs
+        next unless lhs
+        number = lhs.number
+        next unless number
+        @sym_to_rules[number] ||= [] of Rule
+        @sym_to_rules[number] << rule
+      end
+    end
+
+    def validate_no_precedence_for_nterm!
+      errors = [] of String
+      nterms.each do |nterm|
+        precedence = nterm.precedence
+        next unless precedence
+        errors << "[BUG] Precedence #{nterm.name} (line: #{precedence.lineno}) is defined for nonterminal symbol (line: #{nterm.id.first_line}). Precedence can be defined for only terminal symbol."
+      end
+      raise errors.join("\n") unless errors.empty?
+    end
+
+    def validate_rule_lhs_is_nterm!
+      errors = [] of String
+      rules.each do |rule|
+        lhs = rule.lhs
+        next unless lhs
+        next if lhs.nterm?
+        errors << "[BUG] LHS of #{rule.display_name} (line: #{rule.lineno}) is terminal symbol. It should be nonterminal symbol."
+      end
+      raise errors.join("\n") unless errors.empty?
+    end
+
+    def validate_duplicated_precedence!
+      errors = [] of String
+      seen = {} of String => Precedence
+      precedences.each do |prec|
+        s_value = prec.s_value
+        if first = seen[s_value]?
+          errors << "%#{prec.type} redeclaration for #{s_value} (line: #{prec.lineno}) previous declaration was %#{first.type} (line: #{first.lineno})"
+        else
+          seen[s_value] = prec
+        end
+      end
+      raise errors.join("\n") unless errors.empty?
+    end
+
+    def set_locations
+      @locations = @locations || @rules.any?(&.contains_at_reference?)
+    end
+
+    private def build_printers
+      @printers.map do |decl|
+        Printer.new(decl.targets, decl.code, decl.code.line)
+      end
+    end
+
+    private def build_destructors
+      @destructors.map do |decl|
+        Destructor.new(decl.targets, decl.code, decl.code.line)
+      end
+    end
+
+    private def build_error_tokens
+      @error_tokens.map do |decl|
+        ErrorToken.new(decl.targets, decl.code, decl.code.line)
+      end
+    end
+
+    private def start_rule_token : Lexer::Token::Base
+      if value = start_symbol
+        return find_rule_lhs_by_s_value(value)
+      end
+      first_builder = @rule_builders.first?
+      if first_builder && (lhs = first_builder.lhs)
+        return lhs
+      end
+      Lexer::Token::Ident.new("$accept", location: internal_location)
+    end
+
+    private def find_rule_lhs_by_s_value(value : String) : Lexer::Token::Base
+      if builder = @rule_builders.find { |rule_builder| rule_builder.lhs.try(&.s_value) == value }
+        lhs = builder.lhs
+        return lhs if lhs
+      end
+      Lexer::Token::Ident.new(value, location: internal_location)
+    end
+
+    private def internal_location
+      if location = @internal_location
+        return location
+      end
+      file = Lexer::GrammarFile.new("<internal>", "")
+      location = Lexer::Location.new(
+        grammar_file: file,
+        first_line: 1,
+        first_column: 0,
+        last_line: 1,
+        last_column: 0
+      )
+      @internal_location = location
+      location
     end
 
     struct TokenDeclaration

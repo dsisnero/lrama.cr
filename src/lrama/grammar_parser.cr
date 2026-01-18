@@ -37,8 +37,6 @@ module Lrama
     @trailing_prec_seen : Bool
     @code_after_prec : Bool
     @precedence_number : Int32
-    @rule_counter : Grammar::Counter
-    @midrule_action_counter : Grammar::Counter
 
     def initialize(@lexer : Lexer)
       @grammar = Grammar.new
@@ -48,8 +46,6 @@ module Lrama
       @trailing_prec_seen = false
       @code_after_prec = false
       @precedence_number = 0
-      @rule_counter = Grammar::Counter.new(0)
-      @midrule_action_counter = Grammar::Counter.new(1)
     end
 
     def parse
@@ -841,7 +837,7 @@ module Lrama
 
     private def parse_rhs
       reset_precs
-      builder = @grammar.create_rule_builder(@rule_counter, @midrule_action_counter)
+      builder = @grammar.create_rule_builder(@grammar.rule_counter, @grammar.midrule_action_counter)
 
       loop do
         token = next_token

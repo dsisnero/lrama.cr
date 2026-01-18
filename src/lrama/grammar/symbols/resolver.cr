@@ -23,7 +23,7 @@ module Lrama
         end
 
         def sort_by_number!
-          symbols.sort_by!(&.number)
+          symbols.sort_by! { |sym| sym.number || 0 }
         end
 
         def add_term(
