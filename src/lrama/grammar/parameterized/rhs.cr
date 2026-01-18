@@ -4,7 +4,7 @@ module Lrama
       class Rhs
         property symbols : Array(Lexer::Token::Base)
         property user_code : Lexer::Token::UserCode?
-        property precedence_sym : Lexer::Token::Base?
+        property precedence_sym : Grammar::Symbol?
 
         def initialize
           @symbols = [] of Lexer::Token::Base
@@ -13,9 +13,10 @@ module Lrama
         end
 
         def resolve_user_code(bindings : Grammar::Binding)
-          return unless user_code
+          code = user_code
+          return unless code
 
-          resolved = Lexer::Token::UserCode.new(user_code.s_value, location: user_code.location)
+          resolved = Lexer::Token::UserCode.new(code.s_value, location: code.location)
           var_to_arg = {} of String => String
 
           symbols.each do |sym|

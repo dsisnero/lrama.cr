@@ -2,9 +2,9 @@ module Lrama
   class Grammar
     struct Reference
       getter type : ::Symbol
-      getter name : String?
-      getter number : Int32?
-      getter index : Int32?
+      property name : String?
+      property number : Int32?
+      property index : Int32?
       getter ex_tag : Lexer::Token::Base?
       getter first_column : Int32
       getter last_column : Int32
