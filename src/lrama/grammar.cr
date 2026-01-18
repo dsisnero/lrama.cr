@@ -1,4 +1,5 @@
 require "./bitmap"
+require "./grammar/binding"
 require "./grammar/counter"
 require "./grammar/precedence"
 require "./grammar/printer"
