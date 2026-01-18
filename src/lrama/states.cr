@@ -16,6 +16,14 @@ module Lrama
       @states.size
     end
 
+    def sr_conflicts_count
+      0
+    end
+
+    def rr_conflicts_count
+      0
+    end
+
     private def create_state(
       accessing_symbol : Grammar::Symbol,
       kernels : Array(State::Item),
