@@ -1,3 +1,12 @@
+require "./bitmap"
+require "./grammar/precedence"
+require "./grammar/printer"
+require "./grammar/destructor"
+require "./grammar/error_token"
+require "./grammar/type"
+require "./grammar/symbol"
+require "./grammar/symbols"
+
 module Lrama
   class Grammar
     getter declarations_tokens : Array(Lexer::TokenValue)
@@ -23,6 +32,7 @@ module Lrama
     getter printers : Array(CodeDeclaration)
     getter destructors : Array(CodeDeclaration)
     getter error_tokens : Array(CodeDeclaration)
+    getter symbols_resolver : Grammar::Symbols::Resolver
     getter parameterized_rules : Array(ParameterizedRule)
     getter rule_builders : Array(RuleBuilder)
     property after_shift : String?
@@ -57,6 +67,7 @@ module Lrama
       @printers = [] of CodeDeclaration
       @destructors = [] of CodeDeclaration
       @error_tokens = [] of CodeDeclaration
+      @symbols_resolver = Grammar::Symbols::Resolver.new
       @parameterized_rules = [] of ParameterizedRule
       @rule_builders = [] of RuleBuilder
       @after_shift = nil
@@ -80,7 +91,7 @@ module Lrama
       RuleBuilder.new
     end
 
-    def tokens_for(section : Symbol)
+    def tokens_for(section : ::Symbol)
       case section
       when :declarations
         declarations_tokens
@@ -91,6 +102,52 @@ module Lrama
       else
         raise "Unknown section: #{section}"
       end
+    end
+
+    def symbols
+      symbols_resolver.symbols
+    end
+
+    def nterms
+      symbols_resolver.nterms
+    end
+
+    def terms
+      symbols_resolver.terms
+    end
+
+    def add_nterm(id : Lexer::Token::Base, alias_name : String? = nil, tag : Lexer::Token::Tag? = nil)
+      symbols_resolver.add_nterm(id, alias_name, tag)
+    end
+
+    def add_term(
+      id : Lexer::Token::Base,
+      alias_name : String? = nil,
+      tag : Lexer::Token::Tag? = nil,
+      token_id : Int32? = nil,
+      replace : Bool = false,
+    )
+      symbols_resolver.add_term(id, alias_name, tag, token_id, replace)
+    end
+
+    def find_term_by_s_value(s_value : String)
+      symbols_resolver.find_term_by_s_value(s_value)
+    end
+
+    def find_symbol_by_s_value!(s_value : String)
+      symbols_resolver.find_symbol_by_s_value!(s_value)
+    end
+
+    def find_symbol_by_id!(id : Lexer::Token::Base)
+      symbols_resolver.find_symbol_by_id!(id)
+    end
+
+    def fill_symbol_number
+      symbols_resolver.fill_symbol_number
+    end
+
+    def sort_symbols_by_number!
+      symbols_resolver.sort_by_number!
     end
 
     struct TokenDeclaration
@@ -117,11 +174,11 @@ module Lrama
     end
 
     struct PrecedenceDeclaration
-      getter kind : Symbol
+      getter kind : ::Symbol
       getter tag : Lexer::Token::Tag?
       getter tokens : Array(Lexer::Token::Base)
 
-      def initialize(@kind : Symbol, @tag : Lexer::Token::Tag?, @tokens : Array(Lexer::Token::Base))
+      def initialize(@kind : ::Symbol, @tag : Lexer::Token::Tag?, @tokens : Array(Lexer::Token::Base))
       end
     end
 

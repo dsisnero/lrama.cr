@@ -1,7 +1,7 @@
 module Lrama
   class Grammar
     struct Reference
-      getter type : Symbol
+      getter type : ::Symbol
       getter name : String?
       getter number : Int32?
       getter index : Int32?
@@ -10,7 +10,7 @@ module Lrama
       getter last_column : Int32
 
       def initialize(
-        @type : Symbol,
+        @type : ::Symbol,
         @first_column : Int32,
         @last_column : Int32,
         @name : String? = nil,
