@@ -6,8 +6,8 @@ module Lrama
       getter type : ::Symbol
       getter precedence : Int32
       getter lineno : Int32
-      getter used_by_lalr : Array(Object)
-      getter used_by_ielr : Array(Object)
+      getter used_by_lalr_count : Int32
+      getter used_by_ielr_count : Int32
 
       def initialize(
         @symbol : Grammar::Symbol,
@@ -16,16 +16,16 @@ module Lrama
         @precedence : Int32,
         @lineno : Int32,
       )
-        @used_by_lalr = [] of Object
-        @used_by_ielr = [] of Object
+        @used_by_lalr_count = 0
+        @used_by_ielr_count = 0
       end
 
-      def mark_used_by_lalr(resolved_conflict : Object)
-        @used_by_lalr << resolved_conflict
+      def mark_used_by_lalr(_resolved_conflict)
+        @used_by_lalr_count += 1
       end
 
-      def mark_used_by_ielr(resolved_conflict : Object)
-        @used_by_ielr << resolved_conflict
+      def mark_used_by_ielr(_resolved_conflict)
+        @used_by_ielr_count += 1
       end
 
       def used_by?
@@ -33,11 +33,11 @@ module Lrama
       end
 
       def used_by_lalr?
-        !@used_by_lalr.empty?
+        @used_by_lalr_count > 0
       end
 
       def used_by_ielr?
-        !@used_by_ielr.empty?
+        @used_by_ielr_count > 0
       end
     end
   end

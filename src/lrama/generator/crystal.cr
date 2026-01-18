@@ -142,7 +142,7 @@ module Lrama
       end
 
       private def emit_reduce_method(io : IO)
-        io.puts "  def reduce(rule : Int32, values : Array(Object?), locations : Array(Lrama::Runtime::Location?)) : Object?"
+        io.puts "  def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value"
         io.puts "    case rule"
         io.puts "    when 0"
         io.puts "      nil"
@@ -178,9 +178,7 @@ module Lrama
 
       private def format_array(values : Array(Int32))
         return "[] of Int32" if values.empty?
-        chunks = values.each_slice(12).map do |slice|
-          slice.join(", ")
-        end
+        chunks = values.each_slice(12).map(&.join(", ")).to_a
         if chunks.size == 1
           "[#{chunks.first}]"
         else

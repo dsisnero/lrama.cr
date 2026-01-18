@@ -110,7 +110,11 @@ private class RuntimeParser < Lrama::Runtime::Parser
     SYM_EOF
   end
 
-  def reduce(_rule : Int32, _values : Array(Object?), _locations : Array(Lrama::Runtime::Location?))
+  def reduce(
+    rule : Int32,
+    values : Array(Lrama::Runtime::Value),
+    locations : Array(Lrama::Runtime::Location?),
+  ) : Lrama::Runtime::Value
     nil
   end
 end

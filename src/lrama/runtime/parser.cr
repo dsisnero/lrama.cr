@@ -5,7 +5,7 @@ module Lrama
 
       def initialize(@debug : Bool = false)
         @state_stack = [] of Int32
-        @value_stack = [] of Object?
+        @value_stack = [] of Value
         @location_stack = [] of Location?
         @error_status = 0
       end
@@ -25,7 +25,7 @@ module Lrama
       abstract def yyfinal : Int32
       abstract def error_symbol : Int32
       abstract def eof_symbol : Int32
-      abstract def reduce(rule : Int32, values : Array(Object?), locations : Array(Location?)) : Object?
+      abstract def reduce(rule : Int32, values : Array(Value), locations : Array(Location?)) : Value
 
       # ameba:disable Metrics/CyclomaticComplexity
       def parse(lexer : Lexer) : Int32
@@ -201,7 +201,7 @@ module Lrama
       end
 
       private def pop_values(count : Int32)
-        return [] of Object? if count <= 0
+        return [] of Value if count <= 0
         @value_stack.pop(count)
       end
 
