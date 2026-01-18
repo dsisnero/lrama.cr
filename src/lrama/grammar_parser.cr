@@ -36,6 +36,7 @@ module Lrama
     @opening_prec_seen : Bool
     @trailing_prec_seen : Bool
     @code_after_prec : Bool
+    @precedence_number : Int32
 
     def initialize(@lexer : Lexer)
       @grammar = Grammar.new
@@ -44,6 +45,7 @@ module Lrama
       @opening_prec_seen = false
       @trailing_prec_seen = false
       @code_after_prec = false
+      @precedence_number = 0
     end
 
     def parse
@@ -433,11 +435,21 @@ module Lrama
     end
 
     private def parse_type_declarations
-      parse_symbol_declarations(@grammar.type_declarations)
+      groups = parse_symbol_declarations(@grammar.type_declarations)
+      groups.each do |group|
+        group.tokens.each do |id|
+          @grammar.add_type(id, group.tag) if group.tag
+        end
+      end
     end
 
     private def parse_nterm_declarations
-      parse_symbol_declarations(@grammar.nterm_declarations)
+      groups = parse_symbol_declarations(@grammar.nterm_declarations)
+      groups.each do |group|
+        group.tokens.each do |id|
+          @grammar.add_type(id, group.tag) if group.tag
+        end
+      end
     end
 
     private def parse_precedence_kind(token_value : String)
@@ -524,6 +536,7 @@ module Lrama
             alias_name: alias_name,
             tag: current_tag
           )
+          @grammar.add_term(id_token, alias_name, current_tag, token_id, true)
           next
         end
 
@@ -555,6 +568,7 @@ module Lrama
     end
 
     private def parse_symbol_declarations(target : Array(Grammar::SymbolGroup))
+      groups = [] of Grammar::SymbolGroup
       loop do
         token = next_token
         break unless token
@@ -562,19 +576,26 @@ module Lrama
         if token[0] == :TAG
           tag = token[1].as(Lexer::Token::Tag)
           tokens = parse_symbol_list
-          target << Grammar::SymbolGroup.new(tag, tokens) unless tokens.empty?
+          group = Grammar::SymbolGroup.new(tag, tokens)
+          unless tokens.empty?
+            target << group
+            groups << group
+          end
           next
         end
 
         if symbol = symbol_token_from(token)
           tokens = [symbol] + parse_symbol_list
-          target << Grammar::SymbolGroup.new(nil, tokens)
+          group = Grammar::SymbolGroup.new(nil, tokens)
+          target << group
+          groups << group
           next
         end
 
         unread_token(token)
         break
       end
+      groups
     end
 
     private def parse_symbol_list
@@ -607,19 +628,40 @@ module Lrama
         if token[0] == :TAG
           tag = token[1].as(Lexer::Token::Tag)
           tokens = parse_id_list
-          @grammar.precedence_declarations << Grammar::PrecedenceDeclaration.new(kind, tag, tokens) unless tokens.empty?
+          unless tokens.empty?
+            @grammar.precedence_declarations << Grammar::PrecedenceDeclaration.new(kind, tag, tokens)
+            register_precedence(kind, tag, tokens)
+          end
           next
         end
 
         if id = id_token_from(token)
           tokens = [id] + parse_id_list
           @grammar.precedence_declarations << Grammar::PrecedenceDeclaration.new(kind, nil, tokens)
+          register_precedence(kind, nil, tokens)
           next
         end
 
         unread_token(token)
         break
       end
+    end
+
+    private def register_precedence(kind : Symbol, tag : Lexer::Token::Tag?, tokens : Array(Lexer::Token::Base))
+      tokens.each do |id|
+        sym = @grammar.add_term(id, nil, tag)
+        case kind
+        when :left
+          @grammar.add_left(sym, @precedence_number, id.s_value, id.first_line)
+        when :right
+          @grammar.add_right(sym, @precedence_number, id.s_value, id.first_line)
+        when :precedence
+          @grammar.add_precedence(sym, @precedence_number, id.s_value, id.first_line)
+        else
+          @grammar.add_nonassoc(sym, @precedence_number, id.s_value, id.first_line)
+        end
+      end
+      @precedence_number += 1
     end
 
     private def parse_id_list
@@ -709,6 +751,7 @@ module Lrama
     private def parse_rule(lhs_token : Lexer::Token::Ident)
       alias_name = parse_named_ref
       lhs_token.alias_name = alias_name if alias_name
+      @grammar.add_nterm(lhs_token, lhs_token.alias_name)
       expect_token(":")
       builders = parse_rhs_list
       builders.each do |builder|

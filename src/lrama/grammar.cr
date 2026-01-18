@@ -23,6 +23,8 @@ module Lrama
     getter type_declarations : Array(SymbolGroup)
     getter nterm_declarations : Array(SymbolGroup)
     getter precedence_declarations : Array(PrecedenceDeclaration)
+    getter types : Array(Type)
+    getter precedences : Array(Precedence)
     property start_symbol : String?
     property union_code : Lexer::Token::UserCode?
     property lex_param : String?
@@ -58,6 +60,8 @@ module Lrama
       @type_declarations = [] of SymbolGroup
       @nterm_declarations = [] of SymbolGroup
       @precedence_declarations = [] of PrecedenceDeclaration
+      @types = [] of Type
+      @precedences = [] of Precedence
       @start_symbol = nil
       @union_code = nil
       @lex_param = nil
@@ -85,6 +89,32 @@ module Lrama
 
     def add_rule_builder(builder : RuleBuilder)
       @rule_builders << builder
+    end
+
+    def add_type(id : Lexer::Token::Base, tag : Lexer::Token::Tag?)
+      return unless tag
+      @types << Type.new(id, tag)
+    end
+
+    def add_left(sym : Grammar::Symbol, precedence : Int32, s_value : String, lineno : Int32)
+      set_precedence(sym, Precedence.new(sym, s_value, :left, precedence, lineno))
+    end
+
+    def add_right(sym : Grammar::Symbol, precedence : Int32, s_value : String, lineno : Int32)
+      set_precedence(sym, Precedence.new(sym, s_value, :right, precedence, lineno))
+    end
+
+    def add_precedence(sym : Grammar::Symbol, precedence : Int32, s_value : String, lineno : Int32)
+      set_precedence(sym, Precedence.new(sym, s_value, :precedence, precedence, lineno))
+    end
+
+    def add_nonassoc(sym : Grammar::Symbol, precedence : Int32, s_value : String, lineno : Int32)
+      set_precedence(sym, Precedence.new(sym, s_value, :nonassoc, precedence, lineno))
+    end
+
+    private def set_precedence(sym : Grammar::Symbol, precedence : Precedence)
+      sym.precedence = precedence
+      @precedences << precedence
     end
 
     def create_rule_builder
