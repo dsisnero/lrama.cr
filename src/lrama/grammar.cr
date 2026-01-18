@@ -4,6 +4,7 @@ module Lrama
     getter rules_tokens : Array(Lexer::TokenValue)
     getter epilogue_tokens : Array(Lexer::TokenValue)
     property prologue : String?
+    property prologue_first_lineno : Int32?
     property? required : Bool
     property define : Hash(String, String?)
     property expect : Int32?
@@ -37,6 +38,7 @@ module Lrama
       @rules_tokens = [] of Lexer::TokenValue
       @epilogue_tokens = [] of Lexer::TokenValue
       @prologue = nil
+      @prologue_first_lineno = nil
       @required = false
       @define = {} of String => String?
       @expect = nil
