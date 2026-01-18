@@ -24,6 +24,7 @@ module Lrama
       abstract def yytable_ninf : Int32
       abstract def yyfinal : Int32
       abstract def error_symbol : Int32
+      abstract def eof_symbol : Int32
       abstract def reduce(rule : Int32, values : Array(Object?), locations : Array(Location?)) : Object?
 
       # ameba:disable Metrics/CyclomaticComplexity
@@ -39,6 +40,10 @@ module Lrama
           case parser_action
           when :syntax_error
             token = lookahead || Token.new(error_symbol)
+            if @error_status == 3 && lookahead
+              return 1 if lookahead.sym == eof_symbol
+              lookahead = nil
+            end
             if @error_status == 0
               on_error(token)
             end

@@ -106,6 +106,10 @@ private class RuntimeParser < Lrama::Runtime::Parser
     SYM_ERROR
   end
 
+  def eof_symbol : Int32
+    SYM_EOF
+  end
+
   def reduce(_rule : Int32, _values : Array(Object?), _locations : Array(Lrama::Runtime::Location?))
     nil
   end
