@@ -19,7 +19,7 @@ describe Lrama::GrammarParser do
     rule.tag.should_not be_nil
     rule.tag.try(&.s_value).should eq "<i>"
 
-    rhs = rule.rhs_list.first
+    rhs = rule.rhs.first
     rhs.symbols.size.should eq 3
     rhs.symbols.first.alias_name.should eq "summand"
     rhs.symbols.last.alias_name.should eq "addend"
