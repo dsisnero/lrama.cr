@@ -4,6 +4,9 @@ require "./lrama/lexer"
 require "./lrama/grammar"
 require "./lrama/grammar/reference"
 require "./lrama/grammar_parser"
+require "./lrama/tracer"
+require "./lrama/state"
+require "./lrama/states"
 
 module Lrama
 end
