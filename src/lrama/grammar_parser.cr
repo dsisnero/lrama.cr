@@ -704,7 +704,7 @@ module Lrama
         expect_token(":")
         rhs_list = parse_parameterized_rhs_list
         @grammar.add_parameterized_rule(
-          Grammar::ParameterizedRule.new(rule_name, [] of Lexer::Token::Base, rhs_list, inline: true)
+          Grammar::Parameterized::Rule.new(rule_name, [] of Lexer::Token::Base, rhs_list, inline: true)
         )
       when :IDENTIFIER
         rule_name = token[1].s_value
@@ -723,7 +723,7 @@ module Lrama
         expect_token(":")
         rhs_list = parse_parameterized_rhs_list
         @grammar.add_parameterized_rule(
-          Grammar::ParameterizedRule.new(rule_name, args, rhs_list, tag: tag, inline: inline)
+          Grammar::Parameterized::Rule.new(rule_name, args, rhs_list, tag: tag, inline: inline)
         )
       else
         raise ParseError.new("Expected rule identifier after %rule")
@@ -763,7 +763,7 @@ module Lrama
     end
 
     private def parse_parameterized_rhs_list
-      list = [] of Grammar::ParameterizedRhs
+      list = [] of Grammar::Parameterized::Rhs
       list << parse_parameterized_rhs
       loop do
         token = next_token
@@ -780,7 +780,7 @@ module Lrama
 
     private def parse_parameterized_rhs
       reset_precs
-      builder = Grammar::ParameterizedRhs.new
+      builder = Grammar::Parameterized::Rhs.new
 
       loop do
         token = next_token
@@ -853,7 +853,7 @@ module Lrama
       builder
     end
 
-    private def handle_parameterized_rhs_token(builder : Grammar::ParameterizedRhs, token : Lexer::TokenValue)
+    private def handle_parameterized_rhs_token(builder : Grammar::Parameterized::Rhs, token : Lexer::TokenValue)
       token_value = token[0]
       return handle_parameterized_rhs_empty(builder, token) if token_value == "%empty"
       return handle_parameterized_rhs_prec(builder, token) if token_value == "%prec"
@@ -869,12 +869,12 @@ module Lrama
       false
     end
 
-    private def handle_parameterized_rhs_empty(builder : Grammar::ParameterizedRhs, token : Lexer::TokenValue)
+    private def handle_parameterized_rhs_empty(builder : Grammar::Parameterized::Rhs, token : Lexer::TokenValue)
       return true if builder.symbols.empty?
       on_action_error("%empty on non-empty rule", token[1].as(Lexer::Token::Base))
     end
 
-    private def handle_parameterized_rhs_prec(builder : Grammar::ParameterizedRhs, token : Lexer::TokenValue)
+    private def handle_parameterized_rhs_prec(builder : Grammar::Parameterized::Rhs, token : Lexer::TokenValue)
       on_action_error("multiple %prec in a rule", token[1].as(Lexer::Token::Base)) if prec_seen?
       sym = parse_symbol_required
       if builder.symbols.empty?
@@ -886,7 +886,7 @@ module Lrama
       true
     end
 
-    private def handle_parameterized_rhs_action(builder : Grammar::ParameterizedRhs, token : Lexer::TokenValue)
+    private def handle_parameterized_rhs_action(builder : Grammar::Parameterized::Rhs, token : Lexer::TokenValue)
       on_action_error("intermediate %prec in a rule", token[1].as(Lexer::Token::Base)) if @trailing_prec_seen
       unread_token(token)
       user_code = parse_action
@@ -896,7 +896,7 @@ module Lrama
       true
     end
 
-    private def handle_parameterized_rhs_instantiate(builder : Grammar::ParameterizedRhs, ident : Lexer::Token::Ident)
+    private def handle_parameterized_rhs_instantiate(builder : Grammar::Parameterized::Rhs, ident : Lexer::Token::Ident)
       expect_token("(")
       args = parse_parameterized_args
       expect_token(")")
@@ -910,7 +910,7 @@ module Lrama
       true
     end
 
-    private def handle_parameterized_rhs_symbol(builder : Grammar::ParameterizedRhs, symbol : Lexer::Token::Base)
+    private def handle_parameterized_rhs_symbol(builder : Grammar::Parameterized::Rhs, symbol : Lexer::Token::Base)
       on_action_error("intermediate %prec in a rule", symbol) if @trailing_prec_seen
       suffix = parse_parameterized_suffix
       if suffix
