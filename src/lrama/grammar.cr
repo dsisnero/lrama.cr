@@ -344,6 +344,7 @@ module Lrama
 
     def prepend_parameterized_rules(rules : Array(Parameterized::Rule))
       @parameterized_resolver.rules = rules + @parameterized_resolver.rules
+      @parameterized_rules = rules + @parameterized_rules
     end
 
     def prepare
