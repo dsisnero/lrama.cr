@@ -38,6 +38,7 @@ module Lrama
     getter destructors : Array(CodeDeclaration)
     getter error_tokens : Array(CodeDeclaration)
     getter symbols_resolver : Grammar::Symbols::Resolver
+    getter parameterized_resolver : Grammar::Parameterized::Resolver
     getter parameterized_rules : Array(Parameterized::Rule)
     getter rule_builders : Array(RuleBuilder)
     property after_shift : String?
@@ -75,6 +76,7 @@ module Lrama
       @destructors = [] of CodeDeclaration
       @error_tokens = [] of CodeDeclaration
       @symbols_resolver = Grammar::Symbols::Resolver.new
+      @parameterized_resolver = Grammar::Parameterized::Resolver.new
       @parameterized_rules = [] of Parameterized::Rule
       @rule_builders = [] of RuleBuilder
       @after_shift = nil
@@ -88,6 +90,7 @@ module Lrama
 
     def add_parameterized_rule(rule : Parameterized::Rule)
       @parameterized_rules << rule
+      @parameterized_resolver.add_rule(rule)
     end
 
     def add_rule_builder(builder : RuleBuilder)
