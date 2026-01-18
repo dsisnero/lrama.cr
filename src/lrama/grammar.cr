@@ -1,3 +1,4 @@
+require "set"
 require "./bitmap"
 require "./grammar/binding"
 require "./grammar/counter"
@@ -113,6 +114,7 @@ module Lrama
       @error_symbol = nil
       @undef_symbol = nil
       @accept_symbol = nil
+      append_special_symbols
     end
 
     def add_parameterized_rule(rule : Parameterized::Rule)
@@ -335,6 +337,55 @@ module Lrama
       sort_symbols_by_number!
     end
 
+    def prepend_parameterized_rules(rules : Array(Parameterized::Rule))
+      @parameterized_resolver.rules = rules + @parameterized_resolver.rules
+    end
+
+    def prepare
+      resolve_inline_rules
+      normalize_rules
+      collect_symbols
+      set_lhs_and_rhs
+      fill_default_precedence
+      fill_symbols
+      fill_sym_to_rules
+      sort_precedence
+      compute_nullable
+      compute_first_set
+      set_locations
+    end
+
+    def validate!
+      symbols_resolver.validate!
+      validate_no_precedence_for_nterm!
+      validate_rule_lhs_is_nterm!
+      validate_duplicated_precedence!
+    end
+
+    def find_rules_by_symbol!(sym : Grammar::Symbol)
+      find_rules_by_symbol(sym) || raise "Rules for #{sym} not found"
+    end
+
+    def find_rules_by_symbol(sym : Grammar::Symbol)
+      number = sym.number
+      return unless number
+      @sym_to_rules[number]?
+    end
+
+    def select_rules_by_s_value(value : String)
+      @rules.select { |rule| rule.lhs.try(&.id.s_value) == value }
+    end
+
+    def unique_rule_s_values
+      values = @rules.compact_map { |rule| rule.lhs.try(&.id.s_value) }
+      values.uniq!
+      values
+    end
+
+    def ielr_defined?
+      @define.key?("lr.type") && @define["lr.type"] == "ielr"
+    end
+
     def fill_sym_to_rules
       @rules.each do |rule|
         lhs = rule.lhs
@@ -400,6 +451,87 @@ module Lrama
     private def build_error_tokens
       @error_tokens.map do |decl|
         ErrorToken.new(decl.targets, decl.code, decl.code.line)
+      end
+    end
+
+    private def sort_precedence
+      @precedences.sort_by! do |prec|
+        prec.symbol.number || 0
+      end
+    end
+
+    private def compute_nullable
+      @rules.each do |rule|
+        if rule.empty_rule?
+          rule.nullable = true
+        elsif rule.rhs.any?(&.term?)
+          rule.nullable = false
+        end
+      end
+
+      loop do
+        rules_without_nullable = @rules.select { |rule| rule.nullable.nil? }
+        nterms_without_nullable = nterms.select { |nterm| nterm.nullable.nil? }
+        rule_count_1 = rules_without_nullable.size
+        nterm_count_1 = nterms_without_nullable.size
+
+        rules_without_nullable.each do |rule|
+          rule.nullable = true if rule.rhs.all? { |sym| sym.nullable == true }
+        end
+
+        nterms_without_nullable.each do |nterm|
+          find_rules_by_symbol!(nterm).each do |rule|
+            nterm.nullable = true if rule.nullable == true
+          end
+        end
+
+        rule_count_2 = @rules.count { |rule| rule.nullable.nil? }
+        nterm_count_2 = nterms.count { |nterm| nterm.nullable.nil? }
+        break if rule_count_1 == rule_count_2 && nterm_count_1 == nterm_count_2
+      end
+
+      rules.select { |rule| rule.nullable.nil? }.each(&.nullable=(false))
+      nterms.select { |nterm| nterm.nullable.nil? }.each(&.nullable=(false))
+    end
+
+    private def compute_first_set
+      terms.each do |term|
+        term.first_set = Set{term}
+        if number = term.number
+          term.first_set_bitmap = Bitmap.from_array([number])
+        else
+          term.first_set_bitmap = Bitmap.from_array([] of Int32)
+        end
+      end
+
+      nterms.each do |nterm|
+        nterm.first_set = Set(Grammar::Symbol).new
+        nterm.first_set_bitmap = Bitmap.from_array([] of Int32)
+      end
+
+      loop do
+        changed = false
+        @rules.each do |rule|
+          lhs = rule.lhs
+          next unless lhs
+          rule.rhs.each do |sym|
+            lhs_bitmap = lhs.first_set_bitmap || Bitmap.from_array([] of Int32)
+            sym_bitmap = sym.first_set_bitmap || Bitmap.from_array([] of Int32)
+            merged = lhs_bitmap | sym_bitmap
+            if merged != lhs_bitmap
+              changed = true
+              lhs.first_set_bitmap = merged
+            end
+            break unless sym.nullable == true
+          end
+        end
+        break unless changed
+      end
+
+      nterms.each do |nterm|
+        nterm.first_set = Bitmap.to_array(nterm.first_set_bitmap || Bitmap.from_array([] of Int32)).map do |number|
+          find_symbol_by_number!(number)
+        end.to_set
       end
     end
 
