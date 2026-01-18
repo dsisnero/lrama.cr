@@ -207,6 +207,10 @@ module Lrama
       symbols_resolver.find_symbol_by_id!(id)
     end
 
+    def find_symbol_by_number!(number : Int32)
+      symbols_resolver.find_symbol_by_number!(number)
+    end
+
     def token_to_symbol(token : Lexer::Token::Base)
       symbols_resolver.token_to_symbol(token)
     end
