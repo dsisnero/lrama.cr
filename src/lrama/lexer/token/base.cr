@@ -1,3 +1,5 @@
+require "../../parse_error"
+
 module Lrama
   class Lexer
     module Token
@@ -39,6 +41,15 @@ module Lrama
 
         def last_column
           location.last_column
+        end
+
+        def line
+          first_line
+        end
+
+        def invalid_ref(ref : Grammar::Reference, message : String)
+          location = self.location.partial_location(ref.first_column, ref.last_column)
+          raise ParseError.new(location.generate_error_message(message))
         end
 
         def validate

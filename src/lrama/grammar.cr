@@ -5,7 +5,10 @@ require "./grammar/precedence"
 require "./grammar/printer"
 require "./grammar/destructor"
 require "./grammar/error_token"
+require "./grammar/inline"
 require "./grammar/parameterized"
+require "./grammar/rule"
+require "./grammar/rule_builder"
 require "./grammar/type"
 require "./grammar/symbol"
 require "./grammar/symbols"
@@ -40,7 +43,8 @@ module Lrama
     getter symbols_resolver : Grammar::Symbols::Resolver
     getter parameterized_resolver : Grammar::Parameterized::Resolver
     getter parameterized_rules : Array(Parameterized::Rule)
-    getter rule_builders : Array(RuleBuilder)
+    getter rule_builders : Array(Grammar::RuleBuilder)
+    getter rules : Array(Grammar::Rule)
     property after_shift : String?
     property before_reduce : String?
     property after_reduce : String?
@@ -78,7 +82,8 @@ module Lrama
       @symbols_resolver = Grammar::Symbols::Resolver.new
       @parameterized_resolver = Grammar::Parameterized::Resolver.new
       @parameterized_rules = [] of Parameterized::Rule
-      @rule_builders = [] of RuleBuilder
+      @rule_builders = [] of Grammar::RuleBuilder
+      @rules = [] of Grammar::Rule
       @after_shift = nil
       @before_reduce = nil
       @after_reduce = nil
@@ -93,8 +98,12 @@ module Lrama
       @parameterized_resolver.add_rule(rule)
     end
 
-    def add_rule_builder(builder : RuleBuilder)
+    def add_rule_builder(builder : Grammar::RuleBuilder)
       @rule_builders << builder
+    end
+
+    def create_rule_builder(rule_counter : Grammar::Counter, midrule_action_counter : Grammar::Counter)
+      RuleBuilder.new(rule_counter, midrule_action_counter, @parameterized_resolver)
     end
 
     def add_type(id : Lexer::Token::Base, tag : Lexer::Token::Tag?)
@@ -121,10 +130,6 @@ module Lrama
     private def set_precedence(sym : Grammar::Symbol, precedence : Precedence)
       sym.precedence = precedence
       @precedences << precedence
-    end
-
-    def create_rule_builder
-      RuleBuilder.new
     end
 
     def tokens_for(section : ::Symbol)
@@ -231,30 +236,6 @@ module Lrama
       getter code : Lexer::Token::UserCode
 
       def initialize(@targets : Array(Lexer::Token::Base), @code : Lexer::Token::UserCode)
-      end
-    end
-
-    class RuleBuilder
-      property lhs : Lexer::Token::Base?
-      property rhs : Array(Lexer::Token::Base)
-      property user_code : Lexer::Token::UserCode?
-      property precedence_sym : Lexer::Token::Base?
-      property line : Int32?
-
-      def initialize
-        @rhs = [] of Lexer::Token::Base
-        @lhs = nil
-        @user_code = nil
-        @precedence_sym = nil
-        @line = nil
-      end
-
-      def add_rhs(token : Lexer::Token::Base)
-        @line ||= token.first_line
-        @rhs << token
-      end
-
-      def complete_input
       end
     end
   end
