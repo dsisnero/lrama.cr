@@ -925,6 +925,7 @@ module Lrama
       user_code.alias_name = named_ref if named_ref
       tag = parse_optional_tag
       user_code.tag = tag if tag
+      builder.line ||= user_code.first_line
       builder.user_code = user_code
       true
     end
