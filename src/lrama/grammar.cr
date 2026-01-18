@@ -22,6 +22,8 @@ module Lrama
     getter printers : Array(CodeDeclaration)
     getter destructors : Array(CodeDeclaration)
     getter error_tokens : Array(CodeDeclaration)
+    getter parameterized_rules : Array(ParameterizedRule)
+    getter rule_builders : Array(RuleBuilder)
     property after_shift : String?
     property before_reduce : String?
     property after_reduce : String?
@@ -53,6 +55,8 @@ module Lrama
       @printers = [] of CodeDeclaration
       @destructors = [] of CodeDeclaration
       @error_tokens = [] of CodeDeclaration
+      @parameterized_rules = [] of ParameterizedRule
+      @rule_builders = [] of RuleBuilder
       @after_shift = nil
       @before_reduce = nil
       @after_reduce = nil
@@ -60,6 +64,18 @@ module Lrama
       @after_pop_stack = nil
       @epilogue = nil
       @epilogue_first_lineno = nil
+    end
+
+    def add_parameterized_rule(rule : ParameterizedRule)
+      @parameterized_rules << rule
+    end
+
+    def add_rule_builder(builder : RuleBuilder)
+      @rule_builders << builder
+    end
+
+    def create_rule_builder
+      RuleBuilder.new
     end
 
     def tokens_for(section : Symbol)
@@ -120,6 +136,59 @@ module Lrama
       getter code : Lexer::Token::UserCode
 
       def initialize(@targets : Array(Lexer::Token::Base), @code : Lexer::Token::UserCode)
+      end
+    end
+
+    class RuleBuilder
+      property lhs : Lexer::Token::Base?
+      property rhs : Array(Lexer::Token::Base)
+      property user_code : Lexer::Token::UserCode?
+      property precedence_sym : Lexer::Token::Base?
+      property line : Int32?
+
+      def initialize
+        @rhs = [] of Lexer::Token::Base
+        @lhs = nil
+        @user_code = nil
+        @precedence_sym = nil
+        @line = nil
+      end
+
+      def add_rhs(token : Lexer::Token::Base)
+        @line ||= token.first_line
+        @rhs << token
+      end
+
+      def complete_input
+      end
+    end
+
+    class ParameterizedRule
+      getter name : String
+      getter parameters : Array(Lexer::Token::Base)
+      getter rhs_list : Array(ParameterizedRhs)
+      getter tag : Lexer::Token::Tag?
+      getter? inline : Bool
+
+      def initialize(
+        @name : String,
+        @parameters : Array(Lexer::Token::Base),
+        @rhs_list : Array(ParameterizedRhs),
+        @tag : Lexer::Token::Tag? = nil,
+        @inline : Bool = false,
+      )
+      end
+    end
+
+    class ParameterizedRhs
+      getter symbols : Array(Lexer::Token::Base)
+      property user_code : Lexer::Token::UserCode?
+      property precedence_sym : Lexer::Token::Base?
+
+      def initialize
+        @symbols = [] of Lexer::Token::Base
+        @user_code = nil
+        @precedence_sym = nil
       end
     end
   end
