@@ -25,6 +25,8 @@ describe Lrama::GrammarParser do
     union_code = grammar.union_code
     union_code.should_not be_nil
     union_code.try(&.code.includes?("int i;")).should be_true
+    grammar.union.should_not be_nil
+    grammar.union.try(&.braces_less_code.includes?("int i;")).should be_true
     grammar.lex_param.should eq "struct lex_params *p"
     grammar.parse_param.should eq "struct parse_params *p"
     initial_action = grammar.initial_action
@@ -34,6 +36,7 @@ describe Lrama::GrammarParser do
     grammar.declarations_tokens.should_not be_empty
     grammar.rule_builders.should_not be_empty
     grammar.epilogue_tokens.should be_empty
+    grammar.aux.prologue.should eq grammar.prologue
   end
 
   it "captures %define and %locations from directives fixture" do
