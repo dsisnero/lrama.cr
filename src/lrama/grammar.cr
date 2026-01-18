@@ -1,6 +1,7 @@
 require "./bitmap"
 require "./grammar/binding"
 require "./grammar/counter"
+require "./grammar/auxiliary"
 require "./grammar/precedence"
 require "./grammar/printer"
 require "./grammar/destructor"
@@ -10,6 +11,7 @@ require "./grammar/parameterized"
 require "./grammar/rule"
 require "./grammar/rule_builder"
 require "./grammar/type"
+require "./grammar/union"
 require "./grammar/symbol"
 require "./grammar/symbols"
 
@@ -52,6 +54,8 @@ module Lrama
     property after_pop_stack : String?
     property epilogue : String?
     property epilogue_first_lineno : Int32?
+    getter aux : Grammar::Auxiliary
+    property union : Grammar::Union?
 
     def initialize
       @declarations_tokens = [] of Lexer::TokenValue
@@ -91,6 +95,8 @@ module Lrama
       @after_pop_stack = nil
       @epilogue = nil
       @epilogue_first_lineno = nil
+      @aux = Grammar::Auxiliary.new
+      @union = nil
     end
 
     def add_parameterized_rule(rule : Parameterized::Rule)

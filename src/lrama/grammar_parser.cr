@@ -267,6 +267,8 @@ module Lrama
         code = token[1].as(Lexer::Token::UserCode)
         @grammar.prologue = code.code
         @grammar.prologue_first_lineno = start_location.try(&.first_line) || code.location.first_line
+        @grammar.aux.prologue = @grammar.prologue
+        @grammar.aux.prologue_first_lineno = @grammar.prologue_first_lineno
         closing = next_token
         if closing
           unless closing[0] == "%}"
@@ -399,6 +401,8 @@ module Lrama
         code = token[1].as(Lexer::Token::UserCode)
         @grammar.epilogue = code.code
         @grammar.epilogue_first_lineno = code.location.first_line
+        @grammar.aux.epilogue = @grammar.epilogue
+        @grammar.aux.epilogue_first_lineno = @grammar.epilogue_first_lineno
       else
         raise ParseError.new("Expected epilogue user code")
       end
@@ -407,7 +411,9 @@ module Lrama
     end
 
     private def parse_union
-      @grammar.union_code = parse_param_block
+      code = parse_param_block
+      @grammar.union_code = code
+      @grammar.union = Grammar::Union.new(code, code.line)
     end
 
     private def parse_percent_code
