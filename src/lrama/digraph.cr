@@ -30,7 +30,7 @@ module Lrama
 
       return unless @index[node] == depth
 
-      while (item = @stack.pop?)
+      while item = @stack.pop?
         @index[item] = Int32::MAX
         break if item == node
         @result[item] = @result[node]
