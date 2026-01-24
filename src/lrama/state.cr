@@ -173,6 +173,10 @@ module Lrama
       end
     end
 
+    def find_reduce_by_item!(item : Item)
+      reduces.find { |reduce| reduce.item == item } || raise "reduce is not found. #{item}"
+    end
+
     def update_transition(transition : Transition, next_state : State)
       set_items_to_state(transition.to_items, next_state)
       next_state.append_predecessor(self)

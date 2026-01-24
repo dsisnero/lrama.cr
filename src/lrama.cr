@@ -12,6 +12,7 @@ require "./lrama/tracer"
 require "./lrama/warnings"
 require "./lrama/state"
 require "./lrama/states"
+require "./lrama/reporter"
 
 module Lrama
 end

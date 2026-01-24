@@ -50,6 +50,99 @@ module Lrama
       @states.flat_map(&.rr_conflicts).size
     end
 
+    def symbols
+      @grammar.symbols
+    end
+
+    def terms
+      @grammar.terms
+    end
+
+    def nterms
+      @grammar.nterms
+    end
+
+    def rules
+      @grammar.rules
+    end
+
+    def precedences
+      @grammar.precedences
+    end
+
+    def ielr_defined?
+      @grammar.ielr_defined?
+    end
+
+    def reads_relation
+      @reads_relation
+    end
+
+    def includes_relation
+      @includes_relation
+    end
+
+    def lookback_relation
+      @lookback_relation
+    end
+
+    def direct_read_sets
+      @direct_read_sets.transform_values { |bitmap| bitmap_to_terms(bitmap) }
+    end
+
+    def read_sets
+      @read_sets.transform_values { |bitmap| bitmap_to_terms(bitmap) }
+    end
+
+    def follow_sets
+      @follow_sets.transform_values { |bitmap| bitmap_to_terms(bitmap) }
+    end
+
+    def la
+      @la.transform_values do |second_hash|
+        second_hash.transform_values { |bitmap| bitmap_to_terms(bitmap) }
+      end
+    end
+
+    def compute_la_sources_for_conflicted_states
+      reflexive = {} of State::Action::Goto => Array(State::Action::Goto)
+      @states.each do |state|
+        state.nterm_transitions.each do |goto|
+          reflexive[goto] = [goto]
+        end
+      end
+
+      read_sets = Digraph(State::Action::Goto, Array(State::Action::Goto)).new(nterm_transitions, @reads_relation, reflexive).compute
+      follow_sets = Digraph(State::Action::Goto, Array(State::Action::Goto)).new(nterm_transitions, @includes_relation, read_sets).compute
+
+      @states.select(&.has_conflicts?).each do |state|
+        lookback_relation_on_state = @lookback_relation[state.id]?
+        next unless lookback_relation_on_state
+        @grammar.rules.each do |rule|
+          rule_id = rule.id || 0
+          ary = lookback_relation_on_state[rule_id]?
+          next unless ary
+
+          sources = {} of Grammar::Symbol => Array(State::Action::Goto)
+          ary.each do |goto|
+            source = follow_sets[goto]?
+            next unless source
+
+            source.each do |goto2|
+              tokens = direct_read_sets[goto2]?
+              next unless tokens
+              tokens.each do |token|
+                sources[token] ||= [] of State::Action::Goto
+                sources[token] |= [goto2]
+              end
+            end
+          end
+
+          state.set_look_ahead_sources(rule, sources)
+        end
+      end
+    end
+
     private def create_state(
       accessing_symbol : Grammar::Symbol,
       kernels : Array(State::Item),

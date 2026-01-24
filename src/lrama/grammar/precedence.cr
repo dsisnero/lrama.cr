@@ -9,6 +9,8 @@ module Lrama
       getter lineno : Int32
       getter used_by_lalr_count : Int32
       getter used_by_ielr_count : Int32
+      getter used_by_lalr : Array(State::ResolvedConflict)
+      getter used_by_ielr : Array(State::ResolvedConflict)
 
       def initialize(
         @symbol : Grammar::Symbol,
@@ -19,18 +21,22 @@ module Lrama
       )
         @used_by_lalr_count = 0
         @used_by_ielr_count = 0
+        @used_by_lalr = [] of State::ResolvedConflict
+        @used_by_ielr = [] of State::ResolvedConflict
       end
 
       def <=>(other : Precedence)
         precedence <=> other.precedence
       end
 
-      def mark_used_by_lalr(_resolved_conflict)
+      def mark_used_by_lalr(resolved_conflict : State::ResolvedConflict)
         @used_by_lalr_count += 1
+        @used_by_lalr << resolved_conflict
       end
 
-      def mark_used_by_ielr(_resolved_conflict)
+      def mark_used_by_ielr(resolved_conflict : State::ResolvedConflict)
         @used_by_ielr_count += 1
+        @used_by_ielr << resolved_conflict
       end
 
       def used_by?
