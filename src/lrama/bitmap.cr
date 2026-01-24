@@ -15,5 +15,9 @@ module Lrama
     def self.to_array(bitmap : Bitmap)
       bitmap.to_a
     end
+
+    def self.to_bool_array(bitmap : Bitmap, size : Int32)
+      Array.new(size) { |index| bitmap.includes?(index) }
+    end
   end
 end
