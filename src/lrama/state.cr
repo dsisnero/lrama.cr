@@ -1,4 +1,7 @@
 require "./state/action"
+require "./state/reduce_reduce_conflict"
+require "./state/resolved_conflict"
+require "./state/shift_reduce_conflict"
 require "./state/item"
 
 module Lrama
@@ -13,6 +16,9 @@ module Lrama
     getter lane_items : Hash(State, Array(Tuple(Item, Item)))
     getter predecessors : Array(State)
     getter closure : Array(Item)
+    getter conflicts : Array(ShiftReduceConflict | ReduceReduceConflict)
+    getter resolved_conflicts : Array(ResolvedConflict)
+    getter default_reduction_rule : Grammar::Rule?
 
     property _transitions : Array(Tuple(Grammar::Symbol, Array(Item)))
     property reduces : Array(Action::Reduce)
@@ -34,6 +40,9 @@ module Lrama
       @transitions_cache = nil
       @nterm_transitions_cache = nil
       @term_transitions_cache = nil
+      @conflicts = [] of ShiftReduceConflict | ReduceReduceConflict
+      @resolved_conflicts = [] of ResolvedConflict
+      @default_reduction_rule = nil
     end
 
     def ==(other : State)
@@ -47,6 +56,13 @@ module Lrama
 
     def non_default_reduces
       reduces.reject(&.default_reduction)
+    end
+
+    def default_reduction_rule=(rule : Grammar::Rule)
+      @default_reduction_rule = rule
+      reduces.each do |reduce|
+        reduce.default_reduction = true if reduce.rule == rule
+      end
     end
 
     def compute_transitions_and_reduces
@@ -103,6 +119,10 @@ module Lrama
       @term_transitions_cache ||= transitions.select(Action::Shift).map(&.as(Action::Shift))
     end
 
+    def selected_term_transitions
+      term_transitions.reject(&.not_selected)
+    end
+
     def transitions
       @transitions_cache ||= @_transitions.map do |next_sym, to_items|
         to_state = @items_to_state[to_items]
@@ -111,6 +131,14 @@ module Lrama
         else
           Action::Goto.new(self, next_sym, to_items, to_state)
         end
+      end
+    end
+
+    def transition(sym : Grammar::Symbol)
+      if sym.term?
+        term_transitions.find(&.next_sym.==(sym)).try(&.to_state) || raise "Can not transit by #{sym} #{self}"
+      else
+        nterm_transitions.find(&.next_sym.==(sym)).try(&.to_state) || raise "Can not transit by #{sym} #{self}"
       end
     end
 
@@ -132,6 +160,26 @@ module Lrama
       transitions << new_transition
       @nterm_transitions_cache = nil
       @term_transitions_cache = nil
+    end
+
+    def has_conflicts?
+      !@conflicts.empty?
+    end
+
+    def sr_conflicts
+      @conflicts.select { |conflict| conflict.type == :shift_reduce }
+    end
+
+    def rr_conflicts
+      @conflicts.select { |conflict| conflict.type == :reduce_reduce }
+    end
+
+    def clear_conflicts
+      @conflicts = [] of ShiftReduceConflict | ReduceReduceConflict
+      @resolved_conflicts = [] of ResolvedConflict
+      @default_reduction_rule = nil
+      term_transitions.each(&.clear_conflicts)
+      reduces.each(&.clear_conflicts)
     end
 
     def append_predecessor(prev_state : State)
