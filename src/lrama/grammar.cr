@@ -409,7 +409,7 @@ module Lrama
     end
 
     def ielr_defined?
-      @define.key?("lr.type") && @define["lr.type"] == "ielr"
+      @define.has_key?("lr.type") && @define["lr.type"] == "ielr"
     end
 
     def fill_sym_to_rules

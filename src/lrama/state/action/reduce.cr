@@ -32,8 +32,9 @@ module Lrama
         end
 
         def selected_look_ahead
-          if look_ahead
-            look_ahead - @not_selected_symbols
+          lookahead = look_ahead
+          if lookahead
+            lookahead - @not_selected_symbols
           else
             [] of Grammar::Symbol
           end
