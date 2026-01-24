@@ -20,7 +20,21 @@ module Lrama
     def compute
       report_duration(:compute_lr0_states) { compute_lr0_states }
       report_duration(:compute_look_ahead_sets) { compute_look_ahead_sets }
-      report_duration(:compute_conflicts) { compute_conflicts }
+      report_duration(:compute_conflicts) { compute_conflicts(:lalr) }
+      report_duration(:compute_default_reduction) { compute_default_reduction }
+    end
+
+    def compute_ielr
+      report_duration(:clear_conflicts) { clear_conflicts }
+      report_duration(:compute_predecessors) { compute_predecessors }
+      report_duration(:compute_follow_kernel_items) { compute_follow_kernel_items }
+      report_duration(:compute_always_follows) { compute_always_follows }
+      report_duration(:compute_goto_follows) { compute_goto_follows }
+      report_duration(:compute_inadequacy_annotations) { compute_inadequacy_annotations }
+      report_duration(:split_states) { split_states }
+      report_duration(:clear_look_ahead_sets) { clear_look_ahead_sets }
+      report_duration(:compute_look_ahead_sets) { compute_look_ahead_sets }
+      report_duration(:compute_conflicts) { compute_conflicts(:ielr) }
       report_duration(:compute_default_reduction) { compute_default_reduction }
     end
 
@@ -234,12 +248,12 @@ module Lrama
       Bitmap.to_array(bit).map { |number| @grammar.find_symbol_by_number!(number) }
     end
 
-    private def compute_conflicts
-      compute_shift_reduce_conflicts
+    private def compute_conflicts(lr_type : Symbol)
+      compute_shift_reduce_conflicts(lr_type)
       compute_reduce_reduce_conflicts
     end
 
-    private def compute_shift_reduce_conflicts
+    private def compute_shift_reduce_conflicts(lr_type : Symbol)
       @states.each do |state|
         state.term_transitions.each do |shift|
           state.reduces.each do |reduce|
@@ -261,12 +275,12 @@ module Lrama
               resolved = State::ResolvedConflict.new(state, sym, reduce, :reduce, false)
               state.resolved_conflicts << resolved
               shift.not_selected = true
-              mark_precedences_used(shift_prec, reduce_prec, resolved)
+              mark_precedences_used(lr_type, shift_prec, reduce_prec, resolved)
             when shift_prec > reduce_prec
               resolved = State::ResolvedConflict.new(state, sym, reduce, :shift, false)
               state.resolved_conflicts << resolved
               reduce.add_not_selected_symbol(sym)
-              mark_precedences_used(shift_prec, reduce_prec, resolved)
+              mark_precedences_used(lr_type, shift_prec, reduce_prec, resolved)
             else
               case sym.precedence.try(&.type)
               when :precedence
@@ -275,18 +289,18 @@ module Lrama
                 resolved = State::ResolvedConflict.new(state, sym, reduce, :shift, true)
                 state.resolved_conflicts << resolved
                 reduce.add_not_selected_symbol(sym)
-                mark_precedences_used(shift_prec, reduce_prec, resolved)
+                mark_precedences_used(lr_type, shift_prec, reduce_prec, resolved)
               when :left
                 resolved = State::ResolvedConflict.new(state, sym, reduce, :reduce, true)
                 state.resolved_conflicts << resolved
                 shift.not_selected = true
-                mark_precedences_used(shift_prec, reduce_prec, resolved)
+                mark_precedences_used(lr_type, shift_prec, reduce_prec, resolved)
               when :nonassoc
                 resolved = State::ResolvedConflict.new(state, sym, reduce, :error, false)
                 state.resolved_conflicts << resolved
                 shift.not_selected = true
                 reduce.add_not_selected_symbol(sym)
-                mark_precedences_used(shift_prec, reduce_prec, resolved)
+                mark_precedences_used(lr_type, shift_prec, reduce_prec, resolved)
               else
                 raise "Unknown precedence type. #{sym}"
               end
@@ -297,12 +311,19 @@ module Lrama
     end
 
     private def mark_precedences_used(
+      lr_type : Symbol,
       shift_prec : Grammar::Precedence,
       reduce_prec : Grammar::Precedence,
       resolved_conflict : State::ResolvedConflict,
     )
-      shift_prec.mark_used_by_lalr(resolved_conflict)
-      reduce_prec.mark_used_by_lalr(resolved_conflict)
+      case lr_type
+      when :lalr
+        shift_prec.mark_used_by_lalr(resolved_conflict)
+        reduce_prec.mark_used_by_lalr(resolved_conflict)
+      when :ielr
+        shift_prec.mark_used_by_ielr(resolved_conflict)
+        reduce_prec.mark_used_by_ielr(resolved_conflict)
+      end
     end
 
     private def compute_reduce_reduce_conflicts
@@ -337,6 +358,177 @@ module Lrama
         end
         state.default_reduction_rule = selected[0]
       end
+    end
+
+    private def clear_conflicts
+      @states.each(&.clear_conflicts)
+    end
+
+    private def compute_predecessors
+      @states.each do |state|
+        state.transitions.each do |transition|
+          transition.to_state.append_predecessor(state)
+        end
+      end
+    end
+
+    private def compute_follow_kernel_items
+      set = nterm_transitions
+      relation = compute_goto_internal_relation
+      base_function = compute_goto_bitmaps
+      Digraph(State::Action::Goto, Bitmap::Bitmap).new(set, relation, base_function).compute.each do |goto, follow_kernel_items|
+        state = goto.from_state
+        bools = Bitmap.to_bool_array(follow_kernel_items, state.kernels.size)
+        state.follow_kernel_items[goto] = state.kernels.map_with_index do |kernel, index|
+          {kernel, bools[index]}
+        end.to_h
+      end
+    end
+
+    private def compute_goto_internal_relation
+      relations = {} of State::Action::Goto => Array(State::Action::Goto)
+      @states.each do |state|
+        state.nterm_transitions.each do |goto|
+          relations[goto] = state.internal_dependencies(goto)
+        end
+      end
+      relations
+    end
+
+    private def compute_goto_bitmaps
+      nterm_transitions.map do |goto|
+        bools = goto.from_state.kernels.map_with_index do |kernel, index|
+          index if kernel.next_sym == goto.next_sym && kernel.symbols_after_transition.all?(&.nullable)
+        end.compact
+        {goto, Bitmap.from_array(bools)}
+      end.to_h
+    end
+
+    private def compute_always_follows
+      set = nterm_transitions
+      relation = compute_goto_successor_or_internal_relation
+      base_function = compute_transition_bitmaps
+      Digraph(State::Action::Goto, Bitmap::Bitmap).new(set, relation, base_function).compute.each do |goto, always_follows|
+        goto.from_state.always_follows[goto] = bitmap_to_terms(always_follows)
+      end
+    end
+
+    private def compute_goto_successor_or_internal_relation
+      relations = {} of State::Action::Goto => Array(State::Action::Goto)
+      @states.each do |state|
+        state.nterm_transitions.each do |goto|
+          relations[goto] = state.successor_dependencies(goto) + state.internal_dependencies(goto)
+        end
+      end
+      relations
+    end
+
+    private def compute_transition_bitmaps
+      nterm_transitions.map do |goto|
+        terms = goto.to_state.term_transitions.map { |shift| shift.next_sym.number || 0 }
+        {goto, Bitmap.from_array(terms)}
+      end.to_h
+    end
+
+    private def compute_goto_follows
+      set = nterm_transitions
+      relation = compute_goto_internal_or_predecessor_dependencies
+      base_function = compute_always_follows_bitmaps
+      Digraph(State::Action::Goto, Bitmap::Bitmap).new(set, relation, base_function).compute.each do |goto, goto_follows|
+        goto.from_state.goto_follows[goto] = bitmap_to_terms(goto_follows)
+      end
+    end
+
+    private def compute_goto_internal_or_predecessor_dependencies
+      relations = {} of State::Action::Goto => Array(State::Action::Goto)
+      @states.each do |state|
+        state.nterm_transitions.each do |goto|
+          relations[goto] = state.internal_dependencies(goto) + state.predecessor_dependencies(goto)
+        end
+      end
+      relations
+    end
+
+    private def compute_always_follows_bitmaps
+      nterm_transitions.map do |goto|
+        terms = goto.from_state.always_follows[goto].map { |sym| sym.number || 0 }
+        {goto, Bitmap.from_array(terms)}
+      end.to_h
+    end
+
+    private def split_states
+      @states.each do |state|
+        state.transitions.each do |transition|
+          compute_state(state, transition, transition.to_state)
+        end
+      end
+    end
+
+    private def compute_inadequacy_annotations
+      @states.each(&.annotate_manifestation)
+
+      queue = @states.reject(&.annotation_list.empty?)
+      while curr = queue.shift?
+        curr.predecessors.each do |pred|
+          cache = pred.annotation_list.dup
+          curr.annotate_predecessor(pred)
+          queue << pred if cache != pred.annotation_list && !queue.includes?(pred)
+        end
+      end
+    end
+
+    private def merge_lookaheads(state : State, filtered_lookaheads : Hash(State::Item, Array(Grammar::Symbol)))
+      return if state.kernels.all? { |item| (filtered_lookaheads[item] - state.item_lookahead_set[item]).empty? }
+
+      state.item_lookahead_set = state.item_lookahead_set.merge(filtered_lookaheads) do |_item, existing, added|
+        existing | added
+      end
+      state.transitions.each do |transition|
+        next if transition.to_state.lookaheads_recomputed?
+        compute_state(state, transition, transition.to_state)
+      end
+    end
+
+    private def compute_state(state : State, transition : State::Transition, next_state : State)
+      propagating_lookaheads = state.propagate_lookaheads(next_state)
+      split_state = next_state.ielr_isocores.find(&.compatible?(propagating_lookaheads))
+
+      if split_state.nil?
+        split_state = next_state.lalr_isocore
+        new_state = State.new(@states.size, split_state.accessing_symbol, split_state.kernels)
+        new_state.closure = split_state.closure
+        new_state.compute_transitions_and_reduces
+        split_state.transitions.each do |transition_entry|
+          new_state.set_items_to_state(transition_entry.to_items, transition_entry.to_state)
+        end
+        @states << new_state
+        new_state.lalr_isocore = split_state
+        split_state.ielr_isocores << new_state
+        split_state.ielr_isocores.each do |state_entry|
+          state_entry.ielr_isocores = split_state.ielr_isocores
+        end
+        new_state.lookaheads_recomputed = true
+        new_state.item_lookahead_set = propagating_lookaheads
+        state.update_transition(transition, new_state)
+      elsif !split_state.lookaheads_recomputed?
+        split_state.lookaheads_recomputed = true
+        split_state.item_lookahead_set = propagating_lookaheads
+      else
+        merge_lookaheads(split_state, propagating_lookaheads)
+        if state.items_to_state[transition.to_items].id != split_state.id
+          state.update_transition(transition, split_state)
+        end
+      end
+    end
+
+    private def clear_look_ahead_sets
+      @direct_read_sets.clear
+      @reads_relation.clear
+      @read_sets.clear
+      @includes_relation.clear
+      @lookback_relation.clear
+      @follow_sets.clear
+      @la.clear
     end
   end
 end
