@@ -66,6 +66,10 @@ module Lrama
     getter sym_to_rules : Hash(Int32, Array(Grammar::Rule))
     getter rule_counter : Grammar::Counter
     getter midrule_action_counter : Grammar::Counter
+    getter eof_symbol : Grammar::Symbol?
+    getter error_symbol : Grammar::Symbol?
+    getter undef_symbol : Grammar::Symbol?
+    getter accept_symbol : Grammar::Symbol?
 
     def initialize
       @declarations_tokens = [] of Lexer::TokenValue
@@ -254,6 +258,22 @@ module Lrama
       term = add_nterm(Lexer::Token::Ident.new("$accept", location: internal_location))
       term.accept_symbol = true
       @accept_symbol = term
+    end
+
+    def eof_symbol!
+      @eof_symbol || raise "EOF symbol not initialized"
+    end
+
+    def error_symbol!
+      @error_symbol || raise "Error symbol not initialized"
+    end
+
+    def undef_symbol!
+      @undef_symbol || raise "Undefined symbol not initialized"
+    end
+
+    def accept_symbol!
+      @accept_symbol || raise "Accept symbol not initialized"
     end
 
     def resolve_inline_rules

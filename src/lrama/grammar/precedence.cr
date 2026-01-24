@@ -1,6 +1,7 @@
 module Lrama
   class Grammar
     class Precedence
+      include Comparable(Precedence)
       getter symbol : Grammar::Symbol
       getter s_value : String
       getter type : ::Symbol
@@ -18,6 +19,10 @@ module Lrama
       )
         @used_by_lalr_count = 0
         @used_by_ielr_count = 0
+      end
+
+      def <=>(other : Precedence)
+        precedence <=> other.precedence
       end
 
       def mark_used_by_lalr(_resolved_conflict)
