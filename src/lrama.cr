@@ -1,4 +1,6 @@
 require "./lrama/version"
+require "./lrama/options"
+require "./lrama/option_parser"
 require "./lrama/cli"
 require "./lrama/lexer"
 require "./lrama/grammar"
