@@ -69,4 +69,38 @@ describe Lrama::OptionParser do
       options.y.close
     end
   end
+
+  it "rejects invalid report options" do
+    File.tempfile("lrama") do |file|
+      file.puts("%%")
+      file.flush
+
+      parser = Lrama::OptionParser.new
+
+      expect_raises(Lrama::OptionParser::OptionError, "Invalid report option \"bogus\".") do
+        parser.parse(["--report=bogus", file.path])
+      end
+    end
+  end
+
+  it "rejects invalid trace options" do
+    File.tempfile("lrama") do |file|
+      file.puts("%%")
+      file.flush
+
+      parser = Lrama::OptionParser.new
+
+      expect_raises(Lrama::OptionParser::OptionError, "Invalid trace option \"bogus\".") do
+        parser.parse(["--trace=bogus", file.path])
+      end
+    end
+  end
+
+  it "requires a grammar file" do
+    parser = Lrama::OptionParser.new
+
+    expect_raises(Lrama::OptionParser::OptionError, "File should be specified") do
+      parser.parse([] of String)
+    end
+  end
 end

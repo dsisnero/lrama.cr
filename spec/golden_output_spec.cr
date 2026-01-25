@@ -26,4 +26,38 @@ describe "Golden output" do
     expected = File.read(expected_path)
     output.to_s.should eq(expected)
   end
+
+  it "matches rules report output" do
+    grammar_text = <<-Y
+      %token ID
+      %%
+      start: ID ;
+      %%
+      Y
+
+    states = build_states(grammar_text)
+    output = IO::Memory.new
+    Lrama::Reporter::Rules.new(rules: true).report(output, states)
+
+    expected_path = File.join(__DIR__, "fixtures", "golden", "rules_basic.output")
+    expected = File.read(expected_path)
+    output.to_s.should eq(expected)
+  end
+
+  it "matches terms report output" do
+    grammar_text = <<-Y
+      %token ID UNUSED
+      %%
+      start: ID ;
+      %%
+      Y
+
+    states = build_states(grammar_text)
+    output = IO::Memory.new
+    Lrama::Reporter::Terms.new(terms: true).report(output, states)
+
+    expected_path = File.join(__DIR__, "fixtures", "golden", "terms_basic.output")
+    expected = File.read(expected_path)
+    output.to_s.should eq(expected)
+  end
 end
