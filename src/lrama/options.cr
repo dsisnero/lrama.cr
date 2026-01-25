@@ -19,13 +19,13 @@ module Lrama
     property profile_opts : Hash(Symbol, Bool)?
 
     def initialize
-      @skeleton = "bison/yacc.c"
+      @skeleton = "crystal/parser.ecr"
       @locations = false
       @define = {} of String => String
       @header = false
       @header_file = nil
       @report_file = nil
-      @outfile = "y.tab.c"
+      @outfile = "y.tab.cr"
       @error_recovery = false
       @grammar_file = ""
       @trace_opts = nil

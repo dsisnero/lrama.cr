@@ -22,14 +22,14 @@ crystal build --release -o bin/lrama src/lrama/main.cr
 
 - Lexer + grammar parser for `.y` files.
 - Grammar analysis, LALR state generation, and conflict reporting.
+- Crystal code generation with compressed tables and action translation.
 - Optional report output (`--report` and `--report-file`).
 - Diagram output renders a textual HTML summary of rules (`--diagram`).
 
 ## Gaps And Differences From Ruby Lrama
 
-- Code generation is not wired to emit a full parser yet.
-- The default skeleton name matches Ruby (`bison/yacc.c`) but Crystal output
-  templates are still in progress.
+- The default skeleton is `crystal/parser.ecr`; Ruby C skeletons are not supported
+  in the Crystal CLI yet.
 - Diagram output uses rule text rather than railroad SVGs.
 - Some CLI behaviors are present but are no-ops until codegen completes.
 

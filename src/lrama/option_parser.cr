@@ -103,7 +103,7 @@ module Lrama
 
     private def parse_by_option_parser(argv : Array(String)) : Nil
       @parser = ::OptionParser.new(gnu_optional_args: true) do |parser|
-        parser.banner = "Lrama is LALR (1) parser generator written by Ruby.\n\nUsage: lrama [options] FILE\n"
+        parser.banner = "Lrama is LALR (1) parser generator written in Crystal.\n\nUsage: lrama [options] FILE\n"
         parser.separator ""
         parser.separator "STDIN mode:"
         parser.separator "lrama [options] - FILE               read grammar from STDIN"

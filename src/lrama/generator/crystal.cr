@@ -1,3 +1,5 @@
+require "ecr"
+
 module Lrama
   module Generator
     class Crystal
@@ -42,139 +44,85 @@ module Lrama
       end
 
       def render(io : IO)
-        io.puts "class #{@class_name} < Lrama::Runtime::Parser"
-        emit_symbols(io)
-        emit_table_constants(io)
-        emit_table_methods(io)
-        emit_reduce_method(io)
-        io.puts "end"
+        ECR.embed "#{__DIR__}/templates/parser.ecr", io
       end
 
-      private def emit_symbols(io : IO)
-        @grammar.symbols.sort_by { |sym| sym.number || 0 }.each do |sym|
-          number = sym.number || 0
-          io.puts "  #{sym.enum_name} = #{number}"
-        end
-        io.puts "  YYEMPTY = -2"
-        io.puts "  YYERROR = #{@tables.error_symbol}"
-        io.puts "  YYEOF = #{@tables.eof_symbol}"
-        io.puts "  YYNTOKENS = #{@tables.yyntokens}"
-        io.puts
-      end
-
-      private def emit_table_constants(io : IO)
-        io.puts "  YYPACT = #{format_array(@tables.yypact)}"
-        io.puts "  YYPGOTO = #{format_array(@tables.yypgoto)}"
-        io.puts "  YYDEFACT = #{format_array(@tables.yydefact)}"
-        io.puts "  YYDEFGOTO = #{format_array(@tables.yydefgoto)}"
-        io.puts "  YYTABLE = #{format_array(@tables.yytable)}"
-        io.puts "  YYCHECK = #{format_array(@tables.yycheck)}"
-        io.puts "  YYR1 = #{format_array(@tables.yyr1)}"
-        io.puts "  YYR2 = #{format_array(@tables.yyr2)}"
-        io.puts "  YYLAST = #{@tables.yylast}"
-        io.puts "  YYPACT_NINF = #{@tables.yypact_ninf}"
-        io.puts "  YYTABLE_NINF = #{@tables.yytable_ninf}"
-        io.puts "  YYFINAL = #{@tables.yyfinal}"
-        io.puts
-      end
-
-      private def emit_table_methods(io : IO)
-        io.puts "  def yypact : Array(Int32)"
-        io.puts "    YYPACT"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yypgoto : Array(Int32)"
-        io.puts "    YYPGOTO"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yydefact : Array(Int32)"
-        io.puts "    YYDEFACT"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yydefgoto : Array(Int32)"
-        io.puts "    YYDEFGOTO"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yytable : Array(Int32)"
-        io.puts "    YYTABLE"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yycheck : Array(Int32)"
-        io.puts "    YYCHECK"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yyr1 : Array(Int32)"
-        io.puts "    YYR1"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yyr2 : Array(Int32)"
-        io.puts "    YYR2"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yylast : Int32"
-        io.puts "    YYLAST"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yyntokens : Int32"
-        io.puts "    YYNTOKENS"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yypact_ninf : Int32"
-        io.puts "    YYPACT_NINF"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yytable_ninf : Int32"
-        io.puts "    YYTABLE_NINF"
-        io.puts "  end"
-        io.puts
-        io.puts "  def yyfinal : Int32"
-        io.puts "    YYFINAL"
-        io.puts "  end"
-        io.puts
-        io.puts "  def error_symbol : Int32"
-        io.puts "    YYERROR"
-        io.puts "  end"
-        io.puts
-        io.puts "  def eof_symbol : Int32"
-        io.puts "    YYEOF"
-        io.puts "  end"
-        io.puts
-      end
-
-      private def emit_reduce_method(io : IO)
-        io.puts "  def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value"
-        io.puts "    case rule"
-        io.puts "    when 0"
-        io.puts "      nil"
-        @grammar.rules.each_with_index do |rule, index|
-          rule_id = index + 1
-          io.puts "    when #{rule_id}"
-          emit_rule_comment(io, rule)
-          if code = rule.token_code
-            emit_action_comment(io, code)
+      private def reduce_case(rule : Grammar::Rule, rule_id : Int32)
+        output = IO::Memory.new
+        output.puts "    when #{rule_id}"
+        output.puts "      # #{rule.display_name}"
+        if code = rule.token_code
+          if needs_lhs_location?(code)
+            output.puts "      location = reduce_location(rule, locations)"
           end
-          if rule.rhs.empty?
-            io.puts "      nil"
-          else
-            io.puts "      values.last?"
+          output.puts "      result = #{default_result(rule)}"
+          translated = translate_action(rule, code)
+          translated.each_line do |line|
+            line = line.rstrip
+            if line.empty?
+              output.puts
+            else
+              output.puts "      #{line}"
+            end
           end
+          output.puts "      result"
+        else
+          output.puts "      #{default_result(rule)}"
         end
-        io.puts "    else"
-        io.puts "      nil"
-        io.puts "    end"
-        io.puts "  end"
-        io.puts
+        output.to_s
       end
 
-      private def emit_rule_comment(io : IO, rule : Grammar::Rule)
-        io.puts "      # #{rule.display_name}"
+      private def needs_lhs_location?(code : Lexer::Token::UserCode)
+        code.references.any? { |ref| ref.type == :at && ref.name == "$" }
       end
 
-      private def emit_action_comment(io : IO, code : Lexer::Token::UserCode)
-        code.s_value.each_line do |line|
-          io.puts "      # action: #{line}"
+      private def default_result(rule : Grammar::Rule)
+        rule.rhs.empty? ? "nil" : "values.last?"
+      end
+
+      private def translate_action(rule : Grammar::Rule, code : Lexer::Token::UserCode)
+        translated = code.s_value.dup
+        code.references.reverse_each do |ref|
+          translated = replace_reference(translated, rule, ref)
+        end
+        translated
+      end
+
+      private def replace_reference(code : String, rule : Grammar::Rule, ref : Grammar::Reference)
+        start = ref.first_column
+        finish = ref.last_column
+        replacement = reference_to_crystal(rule, ref)
+        head = start > 0 ? (code.byte_slice(0, start) || "") : ""
+        tail_len = code.bytesize - finish
+        tail = tail_len > 0 ? (code.byte_slice(finish, tail_len) || "") : ""
+        "#{head}#{replacement}#{tail}"
+      end
+
+      # ameba:disable Metrics/CyclomaticComplexity
+      private def reference_to_crystal(rule : Grammar::Rule, ref : Grammar::Reference)
+        case
+        when ref.type == :dollar && ref.name == "$"
+          "result"
+        when ref.type == :at && ref.name == "$"
+          "location"
+        when ref.type == :index && ref.name == "$"
+          raise "$:$ is not supported"
+        when ref.type == :dollar
+          index = ref.index || raise "Reference index missing. #{ref}"
+          "values[#{index - 1}]"
+        when ref.type == :at
+          index = ref.index || raise "Reference index missing. #{ref}"
+          "locations[#{index - 1}]"
+        when ref.type == :index
+          index = ref.index || raise "Reference index missing. #{ref}"
+          position_in_rhs = rule.position_in_original_rule_rhs || rule.rhs.size
+          (index - position_in_rhs - 1).to_s
+        else
+          raise "Unexpected. #{self}, #{ref}"
         end
       end
+
+      # ameba:enable Metrics/CyclomaticComplexity
 
       private def format_array(values : Array(Int32))
         return "[] of Int32" if values.empty?
