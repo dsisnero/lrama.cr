@@ -1,0 +1,7 @@
+Grammar
+
+    0 $accept: start "end of file"
+
+    1 start: ID
+
+
