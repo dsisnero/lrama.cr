@@ -1,0 +1,15 @@
+Precedences
+
+  precedence on PLUS is used to resolve conflict on
+    LALR
+      state 6. Conflict between reduce by "expr -> expr PLUS expr" and shift PLUS resolved as reduce (%left PLUS).
+      state 6. Conflict between reduce by "expr -> expr PLUS expr" and shift STAR resolved as shift (PLUS < STAR).
+      state 7. Conflict between reduce by "expr -> expr STAR expr" and shift PLUS resolved as reduce (PLUS < STAR).
+
+  precedence on STAR is used to resolve conflict on
+    LALR
+      state 6. Conflict between reduce by "expr -> expr PLUS expr" and shift STAR resolved as shift (PLUS < STAR).
+      state 7. Conflict between reduce by "expr -> expr STAR expr" and shift PLUS resolved as reduce (PLUS < STAR).
+      state 7. Conflict between reduce by "expr -> expr STAR expr" and shift STAR resolved as reduce (%left STAR).
+
+

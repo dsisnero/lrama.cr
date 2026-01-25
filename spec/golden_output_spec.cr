@@ -60,4 +60,62 @@ describe "Golden output" do
     expected = File.read(expected_path)
     output.to_s.should eq(expected)
   end
+
+  it "matches conflicts report output" do
+    grammar_text = <<-Y
+      %token ID
+      %%
+      start: start start
+           | ID
+           ;
+      %%
+      Y
+
+    states = build_states(grammar_text)
+    output = IO::Memory.new
+    Lrama::Reporter::Conflicts.new.report(output, states)
+
+    expected_path = File.join(__DIR__, "fixtures", "golden", "conflicts_basic.output")
+    expected = File.read(expected_path)
+    output.to_s.should eq(expected)
+  end
+
+  it "matches precedences report output" do
+    grammar_text = <<-Y
+      %token ID PLUS STAR
+      %left PLUS
+      %left STAR
+      %%
+      expr: expr PLUS expr
+          | expr STAR expr
+          | ID
+          ;
+      %%
+      Y
+
+    states = build_states(grammar_text)
+    output = IO::Memory.new
+    Lrama::Reporter::Precedences.new.report(output, states)
+
+    expected_path = File.join(__DIR__, "fixtures", "golden", "precedences_basic.output")
+    expected = File.read(expected_path)
+    output.to_s.should eq(expected)
+  end
+
+  it "matches states report output" do
+    grammar_text = <<-Y
+      %token ID
+      %%
+      start: ID ;
+      %%
+      Y
+
+    states = build_states(grammar_text)
+    output = IO::Memory.new
+    Lrama::Reporter::States.new.report(output, states)
+
+    expected_path = File.join(__DIR__, "fixtures", "golden", "states_basic.output")
+    expected = File.read(expected_path)
+    output.to_s.should eq(expected)
+  end
 end
