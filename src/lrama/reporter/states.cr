@@ -5,12 +5,14 @@ module Lrama
         @itemsets : Bool = false,
         @lookaheads : Bool = false,
         @solved : Bool = false,
+        @counterexamples : Bool = false,
         @verbose : Bool = false,
         **_options,
       )
       end
 
       def report(io, states, ielr : Bool = false)
+        cex = Counterexamples.new(states) if @counterexamples
         states.compute_la_sources_for_conflicted_states
         report_split_states(io, states.states) if ielr
 
@@ -23,6 +25,7 @@ module Lrama
           report_reduces(io, state)
           report_nterm_transitions(io, state)
           report_conflict_resolutions(io, state) if @solved
+          report_counterexamples(io, state, cex) if @counterexamples && state.has_conflicts?
           report_verbose_info(io, state, states) if @verbose
           io << "\n"
         end
@@ -206,6 +209,30 @@ module Lrama
         end
 
         io << "\n"
+      end
+
+      private def report_counterexamples(io, state, cex)
+        return unless cex
+
+        examples = cex.compute(state)
+        examples.each do |example|
+          is_shift_reduce = example.type == :shift_reduce
+          label0 = is_shift_reduce ? "shift/reduce" : "reduce/reduce"
+          label1 = is_shift_reduce ? "Shift derivation" : "First Reduce derivation"
+          label2 = is_shift_reduce ? "Reduce derivation" : "Second Reduce derivation"
+
+          io << "    #{label0} conflict on token #{example.conflict_symbol.id.s_value}:\n"
+          io << "        #{example.path1_item}\n"
+          io << "        #{example.path2_item}\n"
+          io << "      #{label1}\n"
+          example.derivations1.render_strings_for_report.each do |str|
+            io << "        #{str}\n"
+          end
+          io << "      #{label2}\n"
+          example.derivations2.render_strings_for_report.each do |str|
+            io << "        #{str}\n"
+          end
+        end
       end
 
       private def report_verbose_info(io, state, states)

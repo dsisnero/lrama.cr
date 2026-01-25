@@ -66,6 +66,10 @@ module Lrama
       @grammar.rules
     end
 
+    def eof_symbol
+      @grammar.eof_symbol!
+    end
+
     def precedences
       @grammar.precedences
     end
