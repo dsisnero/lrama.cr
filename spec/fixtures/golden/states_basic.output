@@ -1,0 +1,30 @@
+State 0
+
+    0 $accept: • start "end of file"
+
+    ID  shift, and go to state 1
+
+    start  go to state 2
+
+
+State 1
+
+    1 start: ID •
+
+    $default  reduce using rule 1 (start)
+
+
+State 2
+
+    0 $accept: start • "end of file"
+
+    "end of file"  shift, and go to state 3
+
+
+State 3
+
+    0 $accept: start "end of file" •
+
+    $default  accept
+
+
