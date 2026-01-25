@@ -30,3 +30,8 @@ crystal spec
 - `spec/` - Crystal specs and fixtures
 - `docs/` - Architecture notes
 - `lrama/` - Ruby lrama submodule for reference
+
+## Docs
+
+- `docs/architecture.md` - Design overview
+- `docs/migration.md` - Crystal usage and migration guidance
