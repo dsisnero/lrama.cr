@@ -1,0 +1,94 @@
+class <%= @class_name %> < Lrama::Runtime::Parser
+<% @grammar.symbols.sort_by { |sym| sym.number || 0 }.each do |sym| %>
+  <%= sym.enum_name %> = <%= sym.number || 0 %>
+<% end %>
+  YYEMPTY = -2
+  YYERROR = <%= @tables.error_symbol %>
+  YYEOF = <%= @tables.eof_symbol %>
+  YYNTOKENS = <%= @tables.yyntokens %>
+
+  YYPACT = <%= format_array(@tables.yypact) %>
+  YYPGOTO = <%= format_array(@tables.yypgoto) %>
+  YYDEFACT = <%= format_array(@tables.yydefact) %>
+  YYDEFGOTO = <%= format_array(@tables.yydefgoto) %>
+  YYTABLE = <%= format_array(@tables.yytable) %>
+  YYCHECK = <%= format_array(@tables.yycheck) %>
+  YYR1 = <%= format_array(@tables.yyr1) %>
+  YYR2 = <%= format_array(@tables.yyr2) %>
+  YYLAST = <%= @tables.yylast %>
+  YYPACT_NINF = <%= @tables.yypact_ninf %>
+  YYTABLE_NINF = <%= @tables.yytable_ninf %>
+  YYFINAL = <%= @tables.yyfinal %>
+
+  def yypact : Array(Int32)
+    YYPACT
+  end
+
+  def yypgoto : Array(Int32)
+    YYPGOTO
+  end
+
+  def yydefact : Array(Int32)
+    YYDEFACT
+  end
+
+  def yydefgoto : Array(Int32)
+    YYDEFGOTO
+  end
+
+  def yytable : Array(Int32)
+    YYTABLE
+  end
+
+  def yycheck : Array(Int32)
+    YYCHECK
+  end
+
+  def yyr1 : Array(Int32)
+    YYR1
+  end
+
+  def yyr2 : Array(Int32)
+    YYR2
+  end
+
+  def yylast : Int32
+    YYLAST
+  end
+
+  def yyntokens : Int32
+    YYNTOKENS
+  end
+
+  def yypact_ninf : Int32
+    YYPACT_NINF
+  end
+
+  def yytable_ninf : Int32
+    YYTABLE_NINF
+  end
+
+  def yyfinal : Int32
+    YYFINAL
+  end
+
+  def error_symbol : Int32
+    YYERROR
+  end
+
+  def eof_symbol : Int32
+    YYEOF
+  end
+
+  def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value
+    case rule
+    when 0
+      nil
+<% @grammar.rules.each_with_index do |rule, index| %>
+<%= reduce_case(rule, index + 1) %>
+<% end %>
+    else
+      nil
+    end
+  end
+end
