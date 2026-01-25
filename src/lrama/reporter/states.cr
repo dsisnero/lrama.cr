@@ -152,7 +152,7 @@ module Lrama
       end
 
       private def report_reduces(io, state)
-        reduce_pairs = [] of Tuple(Grammar::Symbol, State::Action::Reduce)
+        reduce_pairs = [] of Tuple(Lrama::Grammar::Symbol, State::Action::Reduce)
         state.non_default_reduces.each do |reduce|
           reduce.look_ahead.try do |terms|
             terms.each { |term| reduce_pairs << {term, reduce} }
@@ -294,7 +294,7 @@ module Lrama
 
       private def report_look_ahead_sets(io, state, states)
         io << "  [Look-Ahead Sets]\n"
-        look_ahead_rules = [] of Tuple(Grammar::Rule, Array(Grammar::Symbol))
+        look_ahead_rules = [] of Tuple(Lrama::Grammar::Rule, Array(Lrama::Grammar::Symbol))
         states.rules.each do |rule|
           rule_id = rule.id || 0
           syms = states.la.dig?(state.id, rule_id)
