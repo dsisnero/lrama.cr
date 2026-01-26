@@ -2,8 +2,8 @@ require "./tracer/duration"
 
 module Lrama
   class Tracer
-    def initialize(@io : IO? = nil, **options)
-      @time_enabled = options[:time]? ? true : false
+    def initialize(@io : IO? = nil, @options : Hash(Symbol, Bool) = {} of Symbol => Bool)
+      @time_enabled = @options[:time]? ? true : false
     end
 
     def trace(grammar : Grammar)

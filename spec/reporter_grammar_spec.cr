@@ -21,7 +21,7 @@ describe Lrama::Reporter do
 
     states = build_states(grammar_text)
     output = IO::Memory.new
-    Lrama::Reporter.new(grammar: true).report(output, states)
+    Lrama::Reporter.new({:grammar => true}).report(output, states)
     output.to_s.includes?("Grammar").should be_true
     output.to_s.includes?("start").should be_true
   end

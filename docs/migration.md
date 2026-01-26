@@ -18,6 +18,13 @@ crystal build --release -o bin/lrama src/lrama/main.cr
 ./bin/lrama --help
 ```
 
+To generate a parser with the built binary:
+
+```
+./bin/lrama sample/calc.y -o sample/calc_parser.cr
+crystal build sample/calc_parser.cr -o calc_parser
+```
+
 ## Current Capabilities
 
 - Lexer + grammar parser for `.y` files.
