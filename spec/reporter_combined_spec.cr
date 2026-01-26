@@ -25,7 +25,14 @@ describe Lrama::Reporter do
 
     states = build_states(grammar_text)
     output = IO::Memory.new
-    Lrama::Reporter.new(grammar: true, rules: true, terms: true, states: true, itemsets: true, lookaheads: true).report(output, states)
+    Lrama::Reporter.new({
+      :grammar    => true,
+      :rules      => true,
+      :terms      => true,
+      :states     => true,
+      :itemsets   => true,
+      :lookaheads => true,
+    }).report(output, states)
 
     expected_path = File.join(__DIR__, "fixtures", "golden", "reporter_combined.output")
     expected = File.read(expected_path)

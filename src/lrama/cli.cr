@@ -11,7 +11,7 @@ module Lrama
       end
 
       begin
-        text = options.y.read
+        text = options.y.gets_to_end
         options.y.close unless options.y == STDIN
 
         grammar_file = Lexer::GrammarFile.new(options.grammar_file, text)
@@ -20,14 +20,14 @@ module Lrama
         grammar.prepare
         grammar.validate!
 
-        tracer = Tracer.new(err, **(options.trace_opts || {} of Symbol => Bool))
+        tracer = Tracer.new(err, options.trace_opts || {} of Symbol => Bool)
         tracer.enable_duration
         states = States.new(grammar, tracer)
         states.compute
         states.compute_ielr if grammar.ielr_defined?
 
         if report_file = options.report_file
-          reporter = Reporter.new(**(options.report_opts || {} of Symbol => Bool))
+          reporter = Reporter.new(options.report_opts || {} of Symbol => Bool)
           File.open(report_file, "w+") do |file|
             reporter.report(file, states)
           end

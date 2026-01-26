@@ -10,13 +10,19 @@ module Lrama
   class Reporter
     include Tracer::Duration
 
-    def initialize(**options)
-      @rules = Rules.new(**options)
-      @terms = Terms.new(**options)
+    def initialize(@options : Hash(Symbol, Bool) = {} of Symbol => Bool)
+      @rules = Rules.new(@options[:rules]? || false)
+      @terms = Terms.new(@options[:terms]? || false)
       @conflicts = Conflicts.new
       @precedences = Precedences.new
-      @grammar = Grammar.new(**options)
-      @states = States.new(**options)
+      @grammar = Grammar.new(@options[:grammar]? || false)
+      @states = States.new(
+        @options[:itemsets]? || false,
+        @options[:lookaheads]? || false,
+        @options[:solved]? || false,
+        @options[:counterexamples]? || false,
+        @options[:verbose]? || false
+      )
     end
 
     def report(io, states)

@@ -24,6 +24,7 @@ module Lrama
       @yypact_ninf = 0
       @yytable_ninf = 0
       @actions = [] of ActionVector
+      @sorted_actions = [] of ActionVector
       compute_tables
     end
 
@@ -116,6 +117,7 @@ module Lrama
       compute_packed_table
     end
 
+    # ameba:disable Metrics/CyclomaticComplexity
     private def compute_yydefact
       @yydefact = Array.new(@states.states.size, 0)
 
@@ -150,8 +152,10 @@ module Lrama
           actions.map! { |action| action == ErrorActionNumber ? 0 : action }
         end
 
-        entries = actions.each_with_index.map { |action, index| {index, action} }
+        entries = actions.each_with_index
+          .map { |action, index| {index, action} }
           .reject { |pair| pair[1] == 0 }
+          .to_a
 
         if !entries.empty?
           @actions << ActionVector.new(
@@ -162,9 +166,11 @@ module Lrama
           )
         end
 
-        @yydefact[state.id] = default_rule ? default_rule.id + 1 : 0
+        @yydefact[state.id] = default_rule ? (default_rule.id || 0) + 1 : 0
       end
     end
+
+    # ameba:enable Metrics/CyclomaticComplexity
 
     private def compute_yydefgoto
       @yydefgoto = Array.new(@states.nterms.size, 0)
@@ -294,7 +300,10 @@ module Lrama
       @yylast = high
 
       @yypact_ninf = (base.reject { |i| i == BaseMin } + [0]).min - 1
-      @yypact = base.map { |value| value == BaseMin ? @yypact_ninf : value }
+      mapped_base = base.map { |value| value == BaseMin ? @yypact_ninf : value }
+      state_count = @states.states.size
+      @yypact = mapped_base[0...state_count]
+      @yypgoto = mapped_base[state_count..-1] || [] of Int32
 
       @yytable_ninf = (table.compact.reject { |i| i == ErrorActionNumber } + [0]).min - 1
       @yytable = table.map do |value|
@@ -312,7 +321,9 @@ module Lrama
 
     private def ensure_size(array : Array(Int32?), size : Int32)
       return if array.size >= size
-      array.resize(size)
+      while array.size < size
+        array << nil
+      end
     end
   end
 end
