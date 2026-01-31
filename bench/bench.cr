@@ -2,18 +2,18 @@ require "benchmark"
 
 require "../src/lrama"
 
-GRAMMAR_PATH = File.expand_path("../lrama/parser.y", __DIR__)
+GRAMMAR_PATH = ENV["LRAMA_BENCH_GRAMMAR"]? || File.expand_path("../spec/fixtures/common/nullable.y", __DIR__)
 GRAMMAR_TEXT = File.read(GRAMMAR_PATH)
 
 private def lex(text : String)
-  grammar_file = Lrama::Lexer::GrammarFile.new("parser.y", text)
+  grammar_file = Lrama::Lexer::GrammarFile.new(GRAMMAR_PATH, text)
   lexer = Lrama::Lexer.new(grammar_file)
   while lexer.next_token
   end
 end
 
 private def parse_grammar(text : String)
-  grammar_file = Lrama::Lexer::GrammarFile.new("parser.y", text)
+  grammar_file = Lrama::Lexer::GrammarFile.new(GRAMMAR_PATH, text)
   grammar = Lrama::GrammarParser.new(Lrama::Lexer.new(grammar_file)).parse
   grammar.prepare
   grammar
@@ -105,7 +105,10 @@ class BenchParser < Lrama::Runtime::Parser
     YYEOF
   end
 
-  def reduce(_rule : Int32, _values : Array(Lrama::Runtime::Value), _locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value
+  def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value
+    _ = rule
+    _ = values
+    _ = locations
     nil
   end
 end

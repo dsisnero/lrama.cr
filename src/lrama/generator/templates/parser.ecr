@@ -96,6 +96,135 @@ class <%= @class_name %> < Lrama::Runtime::Parser
     end
   end
 end
+<% if lexer = lexer_tables %>
+
+class <%= @class_name %>Lexer
+  include Lrama::Runtime::Lexer
+
+  YYLEX_TABLES = <%= format_tables(lexer.tables.map(&.transitions)) %>
+  YYLEX_ACCEPTS = <%= format_array_of_arrays(lexer.tables.map(&.accept)) %>
+  YYLEX_STATE_COUNT = <%= lexer.states.size %>
+  YYLEX_KIND = [<%= lexer_rules.map { |rule| rule.skip? ? 0 : 1 }.join(", ") %>]
+  YYLEX_TOKEN = [<%= lexer_rules.map { |rule| rule.token? ? "#{@class_name}::YYSYMBOL_#{rule.name}" : "-1" }.join(", ") %>]
+  YYLEX_VALUE_KIND = [<%= lexer_rules.map { |rule| value_kind_index(rule.value_kind) }.join(", ") %>]
+  YYLEX_KEYWORD = [<%= lexer_rules.map { |rule| rule.keyword? ? 1 : 0 }.join(", ") %>]
+  <% lexer.states.each_with_index do |name, index| %>
+  STATE_<%= state_const_name(name) %> = <%= index %>
+  <% end %>
+
+  def initialize(@input : String)
+    @index = 0
+    @length = @input.bytesize
+    @state = STATE_INITIAL
+  end
+
+  def begin(state : Int32)
+    if state < 0 || state >= YYLEX_STATE_COUNT
+      raise "Unknown lexer state: #{state}"
+    end
+    @state = state
+  end
+
+  def next_token : Lrama::Runtime::Token
+    while @index < @length
+      start = @index
+      state = 0
+      last_accept = -1
+      last_index = start
+      table = YYLEX_TABLES[@state]
+      accept = YYLEX_ACCEPTS[@state]
+
+      while @index < @length
+        byte = @input.byte_at(@index)
+        next_state = table[state][byte]
+        break if next_state < 0
+        state = next_state
+        @index += 1
+        rule = accept[state]
+        if rule >= 0
+          last_accept = rule
+          last_index = @index
+        end
+      end
+
+      if last_accept < 0
+        byte = @input.byte_at(start)
+        raise "Unexpected character: #{byte}"
+      end
+
+      @index = last_index
+      if YYLEX_KIND[last_accept] == 0
+        next
+      end
+      return build_token(last_accept, start, last_index - start)
+    end
+
+    Lrama::Runtime::Token.new(<%= @class_name %>::YYEOF)
+  end
+
+  private def build_token(rule_index : Int32, start : Int32, length : Int32)
+    token_id = YYLEX_TOKEN[rule_index]
+    if YYLEX_KEYWORD[rule_index] == 1
+      if keyword_id = keyword_token(start, length)
+        token_id = keyword_id
+        return Lrama::Runtime::Token.new(token_id)
+      end
+    end
+    value_kind = YYLEX_VALUE_KIND[rule_index]
+    if value_kind == 0
+      return Lrama::Runtime::Token.new(token_id)
+    end
+    text = @input.byte_slice(start, length) || ""
+    value =
+      case value_kind
+      when 1
+        text.to_i
+      when 2
+        text.to_f
+      when 3
+        text
+      when 4
+        text
+      else
+        nil
+      end
+    Lrama::Runtime::Token.new(token_id, value)
+  end
+
+  <% unless lexer_keywords.empty? %>
+  private def keyword_token(start : Int32, length : Int32)
+<%= keyword_case_lines %>
+    nil
+  end
+
+  private def keyword_match?(start : Int32, length : Int32, keyword : String)
+    return false unless length == keyword.bytesize
+    bytes = keyword.to_slice
+    i = 0
+    while i < length
+      byte = @input.byte_at(start + i)
+      <% if lexer_keywords_case_insensitive? %>
+      if byte >= 97_u8 && byte <= 122_u8
+        byte -= 32_u8
+      end
+      <% end %>
+      return false if byte != bytes[i]
+      i += 1
+    end
+    true
+  end
+  <% end %>
+end
+
+class <%= @class_name %>
+  def self.run(io : IO = STDIN)
+    input = io.gets_to_end
+    parser = new
+    parser.parse(<%= @class_name %>Lexer.new(input))
+    parser
+  end
+end
+<% end %>
 <% if epilogue = @grammar.epilogue %>
 
 <%= epilogue %>

@@ -1,3 +1,6 @@
 [submodule "lrama"]
 	path = lrama
 	url = https://github.com/ruby/lrama.git
+[submodule "racc"]
+	path = racc
+	url = https://github.com/ruby/racc.git

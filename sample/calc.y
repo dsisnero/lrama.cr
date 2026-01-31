@@ -16,6 +16,17 @@ require "../src/lrama/runtime"
 %token PLUS MINUS STAR SLASH LPAREN RPAREN
 %left PLUS MINUS
 %left STAR SLASH
+%lexer {
+  skip /[ \t]+/
+  token NUM /[0-9]+/ int
+  token LF /\n/
+  token PLUS "+"
+  token MINUS "-"
+  token STAR "*"
+  token SLASH "/"
+  token LPAREN "("
+  token RPAREN ")"
+}
 
 %%
 
@@ -32,60 +43,6 @@ expr : NUM
      ;
 
 %%
-
-class CalcLexer
-  include Lrama::Runtime::Lexer
-
-  def initialize(@io : IO)
-    @buffered = nil.as(UInt8?)
-  end
-
-  # ameba:disable Metrics/CyclomaticComplexity
-  def next_token : Lrama::Runtime::Token
-    loop do
-      byte = @buffered || @io.read_byte
-      @buffered = nil
-      return Lrama::Runtime::Token.new(CalcParser::YYEOF) unless byte
-
-      case byte
-      when 32, 9 # space, tab
-        next
-      when 10 # \n
-        return Lrama::Runtime::Token.new(CalcParser::YYSYMBOL_LF)
-      when 43 # +
-        return Lrama::Runtime::Token.new(CalcParser::YYSYMBOL_PLUS)
-      when 45 # -
-        return Lrama::Runtime::Token.new(CalcParser::YYSYMBOL_MINUS)
-      when 42 # *
-        return Lrama::Runtime::Token.new(CalcParser::YYSYMBOL_STAR)
-      when 47 # /
-        return Lrama::Runtime::Token.new(CalcParser::YYSYMBOL_SLASH)
-      when 40 # (
-        return Lrama::Runtime::Token.new(CalcParser::YYSYMBOL_LPAREN)
-      when 41 # )
-        return Lrama::Runtime::Token.new(CalcParser::YYSYMBOL_RPAREN)
-      end
-
-      if byte >= 48 && byte <= 57
-        value = 0
-        while byte >= 48 && byte <= 57
-          value = value * 10 + (byte - 48)
-          next_byte = @io.read_byte
-          break unless next_byte
-          byte = next_byte
-        end
-        if byte < 48 || byte > 57
-          @buffered = byte
-        end
-        return Lrama::Runtime::Token.new(CalcParser::YYSYMBOL_NUM, value)
-      end
-
-      raise "Unexpected byte: #{byte}"
-    end
-  end
-  # ameba:enable Metrics/CyclomaticComplexity
-end
-
 class CalcParser
   def results
     @results ||= [] of Int32
@@ -93,7 +50,14 @@ class CalcParser
 end
 
 if PROGRAM_NAME.ends_with?("calc_parser")
-  parser = CalcParser.new
-  parser.parse(CalcLexer.new(STDIN))
-  parser.results.each { |value| puts "=> #{value}" }
+  if STDIN.tty?
+    while (line = STDIN.gets)
+      input = line.ends_with?('\n') ? line : "#{line}\n"
+      parser = CalcParser.run(IO::Memory.new(input))
+      parser.results.each { |value| puts "=> #{value}" }
+    end
+  else
+    parser = CalcParser.run
+    parser.results.each { |value| puts "=> #{value}" }
+  end
 end

@@ -168,6 +168,8 @@ module Lrama
         parse_code_declaration(@grammar.printers)
       when "%error-token"
         parse_code_declaration(@grammar.error_tokens)
+      when "%lexer"
+        parse_lexer_spec
       when "%lex-param"
         parse_param_assignment(:lex_param)
       when "%parse-param"
@@ -416,6 +418,11 @@ module Lrama
       id_token = expect_token(:IDENTIFIER)
       code = parse_param_block
       @grammar.percent_codes << Grammar::PercentCode.new(id_token[1].s_value, code)
+    end
+
+    private def parse_lexer_spec
+      code = parse_param_block
+      @grammar.lexer_spec = LexerSpec::Parser.new(code.s_value, code.line).parse
     end
 
     private def parse_code_declaration(target : Array(Grammar::CodeDeclaration))

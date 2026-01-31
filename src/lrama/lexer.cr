@@ -55,6 +55,7 @@ module Lrama
       "%locations",
       "%categories",
       "%start",
+      "%lexer",
     ]
 
     @grammar_file : GrammarFile

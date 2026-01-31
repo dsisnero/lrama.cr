@@ -61,6 +61,7 @@ module Lrama
     property after_pop_stack : String?
     property epilogue : String?
     property epilogue_first_lineno : Int32?
+    property lexer_spec : LexerSpec?
     getter aux : Grammar::Auxiliary
     property union : Grammar::Union?
     getter sym_to_rules : Hash(Int32, Array(Grammar::Rule))
@@ -109,6 +110,7 @@ module Lrama
       @after_pop_stack = nil
       @epilogue = nil
       @epilogue_first_lineno = nil
+      @lexer_spec = nil
       @aux = Grammar::Auxiliary.new
       @union = nil
       @sym_to_rules = {} of Int32 => Array(Grammar::Rule)

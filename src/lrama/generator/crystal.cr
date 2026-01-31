@@ -133,6 +133,79 @@ module Lrama
           "[\n    #{chunks.join(",\n    ")}\n  ]"
         end
       end
+
+      private def lexer_tables
+        spec = @grammar.lexer_spec
+        return unless spec
+        @lexer_tables ||= LexerBuilder.new(spec).build
+      end
+
+      private def lexer_rules
+        @grammar.lexer_spec.try(&.rules) || [] of LexerSpec::Rule
+      end
+
+      private def lexer_keywords
+        @grammar.lexer_spec.try(&.keywords) || [] of String
+      end
+
+      private def lexer_keywords_case_insensitive?
+        @grammar.lexer_spec.try(&.keywords_case_insensitive?) || false
+      end
+
+      private def lexer_states
+        @grammar.lexer_spec.try(&.states) || ["INITIAL"]
+      end
+
+      private def format_2d_array(values : Array(Array(Int32)))
+        return "[] of Array(Int32)" if values.empty?
+        rows = values.map do |row|
+          format_array(row)
+        end
+        "[\n    #{rows.join(",\n    ")}\n  ]"
+      end
+
+      private def format_tables(values : Array(Array(Array(Int32))))
+        return "[] of Array(Array(Int32))" if values.empty?
+        tables = values.map do |table|
+          format_2d_array(table)
+        end
+        "[\n    #{tables.join(",\n    ")}\n  ]"
+      end
+
+      private def format_array_of_arrays(values : Array(Array(Int32)))
+        return "[] of Array(Int32)" if values.empty?
+        rows = values.map { |row| format_array(row) }
+        "[\n    #{rows.join(",\n    ")}\n  ]"
+      end
+
+      private def value_kind_index(kind : LexerSpec::ValueKind)
+        case kind
+        when LexerSpec::ValueKind::None
+          0
+        when LexerSpec::ValueKind::Int
+          1
+        when LexerSpec::ValueKind::Float
+          2
+        when LexerSpec::ValueKind::String
+          3
+        else
+          4
+        end
+      end
+
+      private def keyword_case_lines
+        keywords = lexer_keywords
+        return "" if keywords.empty?
+        keywords.map do |name|
+          key = lexer_keywords_case_insensitive? ? name.upcase : name
+          "    return #{@class_name}::YYSYMBOL_#{name} if keyword_match?(start, length, \"#{key}\")"
+        end.join("\n")
+      end
+
+      private def state_const_name(name : String)
+        sanitized = name.gsub(/[^A-Za-z0-9]/, "_")
+        sanitized.upcase
+      end
     end
   end
 end
