@@ -35,3 +35,7 @@ crystal spec
 
 - `docs/architecture.md` - Design overview
 - `docs/migration.md` - Crystal usage and migration guidance
+
+## Examples
+
+- `examples/sql.y` - SQL SELECT grammar using the lexer DSL and Crystal runtime.
