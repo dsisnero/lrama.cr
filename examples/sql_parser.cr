@@ -1530,6 +1530,85 @@ end
 
 
 class SqlParser
+  def self.token_name(symbol : Int32) : String
+    case symbol
+    when YYEOF
+      "YYEOF"
+    when YYSYMBOL_SELECT
+      "SELECT"
+    when YYSYMBOL_DISTINCT
+      "DISTINCT"
+    when YYSYMBOL_FROM
+      "FROM"
+    when YYSYMBOL_WHERE
+      "WHERE"
+    when YYSYMBOL_AND
+      "AND"
+    when YYSYMBOL_OR
+      "OR"
+    when YYSYMBOL_NOT
+      "NOT"
+    when YYSYMBOL_AS
+      "AS"
+    when YYSYMBOL_JOIN
+      "JOIN"
+    when YYSYMBOL_LEFT
+      "LEFT"
+    when YYSYMBOL_RIGHT
+      "RIGHT"
+    when YYSYMBOL_INNER
+      "INNER"
+    when YYSYMBOL_OUTER
+      "OUTER"
+    when YYSYMBOL_ON
+      "ON"
+    when YYSYMBOL_GROUP
+      "GROUP"
+    when YYSYMBOL_BY
+      "BY"
+    when YYSYMBOL_ORDER
+      "ORDER"
+    when YYSYMBOL_LIMIT
+      "LIMIT"
+    when YYSYMBOL_OFFSET
+      "OFFSET"
+    when YYSYMBOL_ASC
+      "ASC"
+    when YYSYMBOL_DESC
+      "DESC"
+    when YYSYMBOL_COMMA
+      "COMMA"
+    when YYSYMBOL_STAR
+      "STAR"
+    when YYSYMBOL_SEMICOLON
+      "SEMICOLON"
+    when YYSYMBOL_LPAREN
+      "LPAREN"
+    when YYSYMBOL_RPAREN
+      "RPAREN"
+    when YYSYMBOL_EQ
+      "EQ"
+    when YYSYMBOL_NE
+      "NE"
+    when YYSYMBOL_LT
+      "LT"
+    when YYSYMBOL_GT
+      "GT"
+    when YYSYMBOL_LE
+      "LE"
+    when YYSYMBOL_GE
+      "GE"
+    when YYSYMBOL_IDENT
+      "IDENT"
+    when YYSYMBOL_STRING
+      "STRING"
+    when YYSYMBOL_NUMBER
+      "NUMBER"
+    else
+      "TOKEN_#{symbol}"
+    end
+  end
+
   def s(value : Lrama::Runtime::Value) : String
     value.as(String)
   end
@@ -1554,9 +1633,26 @@ class SqlParser
 end
 
 if PROGRAM_NAME.ends_with?("sql_parser")
-  parser = SqlParser.run
-  if (tree = parser.tree)
-    puts tree
+  input = STDIN.gets_to_end
+  if ENV["SQL_TOKENS"]?
+    lexer = SqlParserLexer.new(input)
+    loop do
+      token = lexer.next_token
+      token_name = SqlParser.token_name(token.sym)
+      break if token_name == "YYEOF"
+      value = token.value
+      if value
+        puts "#{token_name} #{value}"
+      else
+        puts token_name
+      end
+    end
+  else
+    parser = SqlParser.new
+    parser.parse(SqlParserLexer.new(input))
+    if (tree = parser.tree)
+      puts tree
+    end
   end
 end
 
