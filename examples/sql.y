@@ -44,7 +44,7 @@ require "../src/lrama/runtime"
 
 input: select_stmt SEMICOLON
         {
-          @query = ($1).as(String)
+          set_query(($1).as(String))
         }
      ;
 
@@ -157,6 +157,10 @@ expr: IDENT
 %%
 
 class SqlParser
+  def set_query(value : String)
+    @query = value
+  end
+
   def query : String?
     @query
   end

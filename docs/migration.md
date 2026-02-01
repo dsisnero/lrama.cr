@@ -25,6 +25,14 @@ To generate a parser with the built binary:
 crystal build sample/calc_parser.cr -o calc_parser
 ```
 
+### Example: SQL Grammar With Lexer DSL
+
+```
+./bin/lrama examples/sql.y -o examples/sql_parser.cr
+crystal build examples/sql_parser.cr -o temp/sql_parser
+printf "SELECT id, name FROM users WHERE age > 18 AND active = 1;\n" | temp/sql_parser
+```
+
 ## Current Capabilities
 
 - Lexer + grammar parser for `.y` files.
