@@ -72,4 +72,15 @@ describe Lrama::LexerSpec::Parser do
     spec.rules[0].states.should eq(["INITIAL"])
     spec.rules[1].states.should eq(["STRING"])
   end
+
+  it "parses patterns with whitespace inside regex literals" do
+    source = <<-'LEXER'
+      skip /[ \\t]+/
+      token NUM /[0-9]+/ int
+      LEXER
+    spec = Lrama::LexerSpec::Parser.new(source, 1).parse
+    spec.rules.size.should eq(2)
+    spec.rules.first.skip?.should be_true
+    spec.rules.last.value_kind.should eq(Lrama::LexerSpec::ValueKind::Int)
+  end
 end

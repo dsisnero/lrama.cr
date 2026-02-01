@@ -177,34 +177,29 @@ module Lrama
       end
 
       private def parse_rule(line : String, line_number : Int32, states : Array(String))
-        parts = line.split(/\s+/, 3)
-        kind = parts[0]? || raise ParseError.new("Expected rule at line #{line_number}")
+        scanner = StringScanner.new(line)
+        kind = scan_word(scanner, line_number, "rule")
         if kind == "skip"
-          pattern_text = parts[1]? || raise ParseError.new("Expected pattern at line #{line_number}")
-          pattern_text, _, _, states_override = split_pattern_and_kind(pattern_text, line_number, parts[2]?)
+          pattern_text, value_kind, keyword, states_override = split_pattern_and_kind(scanner, line_number)
           pattern = parse_pattern(pattern_text, line_number)
           rule_states = resolve_rule_states(states, states_override, line_number)
-          return Rule.new(:skip, nil, pattern, ValueKind::None, false, rule_states, line_number)
+          return Rule.new(:skip, nil, pattern, value_kind, keyword, rule_states, line_number)
         end
 
         unless kind == "token"
           raise ParseError.new("Unknown lexer directive '#{kind}' at line #{line_number}")
         end
 
-        name = parts[1]? || raise ParseError.new("Expected token name at line #{line_number}")
-        rest = parts[2]? || raise ParseError.new("Expected pattern at line #{line_number}")
-        pattern_text, value_kind, keyword, states_override = split_pattern_and_kind(rest, line_number, nil)
+        name = scan_word(scanner, line_number, "token name")
+        pattern_text, value_kind, keyword, states_override = split_pattern_and_kind(scanner, line_number)
         pattern = parse_pattern(pattern_text, line_number)
         rule_states = resolve_rule_states(states, states_override, line_number)
         Rule.new(:token, name, pattern, value_kind, keyword, rule_states, line_number)
       end
 
-      private def split_pattern_and_kind(rest : String, line_number : Int32, options_text : String?)
-        scanner = StringScanner.new(rest)
+      private def split_pattern_and_kind(scanner : StringScanner, line_number : Int32)
         pattern_text = parse_pattern_text(scanner, line_number)
-        option_source = options_text
-        option_source = scanner.rest.strip if option_source.nil?
-        options = option_source.to_s.strip
+        options = scanner.rest.to_s.strip
         value_kind = ValueKind::None
         keyword = false
         states_override = nil.as(Array(String)?)
@@ -221,6 +216,13 @@ module Lrama
           end
         end
         {pattern_text, value_kind, keyword, states_override}
+      end
+
+      private def scan_word(scanner : StringScanner, line_number : Int32, label : String)
+        scanner.skip(/\s+/)
+        word = scanner.scan(/\S+/)
+        raise ParseError.new("Expected #{label} at line #{line_number}") unless word
+        word
       end
 
       private def resolve_rule_states(states : Array(String), override : Array(String)?, line_number : Int32)
