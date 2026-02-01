@@ -14,115 +14,191 @@ class SqlParser < Lrama::Runtime::Parser
 
   YYSYMBOL_SELECT = 3
 
-  YYSYMBOL_FROM = 4
+  YYSYMBOL_DISTINCT = 4
 
-  YYSYMBOL_WHERE = 5
+  YYSYMBOL_FROM = 5
 
-  YYSYMBOL_AND = 6
+  YYSYMBOL_WHERE = 6
 
-  YYSYMBOL_OR = 7
+  YYSYMBOL_AND = 7
 
-  YYSYMBOL_NOT = 8
+  YYSYMBOL_OR = 8
 
-  YYSYMBOL_AS = 9
+  YYSYMBOL_NOT = 9
 
-  YYSYMBOL_COMMA = 10
+  YYSYMBOL_AS = 10
 
-  YYSYMBOL_STAR = 11
+  YYSYMBOL_JOIN = 11
 
-  YYSYMBOL_SEMICOLON = 12
+  YYSYMBOL_LEFT = 12
 
-  YYSYMBOL_LPAREN = 13
+  YYSYMBOL_RIGHT = 13
 
-  YYSYMBOL_RPAREN = 14
+  YYSYMBOL_INNER = 14
 
-  YYSYMBOL_EQ = 15
+  YYSYMBOL_OUTER = 15
 
-  YYSYMBOL_NE = 16
+  YYSYMBOL_ON = 16
 
-  YYSYMBOL_LT = 17
+  YYSYMBOL_GROUP = 17
 
-  YYSYMBOL_GT = 18
+  YYSYMBOL_BY = 18
 
-  YYSYMBOL_LE = 19
+  YYSYMBOL_ORDER = 19
 
-  YYSYMBOL_GE = 20
+  YYSYMBOL_LIMIT = 20
 
-  YYSYMBOL_IDENT = 21
+  YYSYMBOL_OFFSET = 21
 
-  YYSYMBOL_STRING = 22
+  YYSYMBOL_ASC = 22
 
-  YYSYMBOL_NUMBER = 23
+  YYSYMBOL_DESC = 23
 
-  YYSYMBOL_YYACCEPT = 24
+  YYSYMBOL_COMMA = 24
 
-  YYSYMBOL_input = 25
+  YYSYMBOL_STAR = 25
 
-  YYSYMBOL_select_stmt = 26
+  YYSYMBOL_SEMICOLON = 26
 
-  YYSYMBOL_select_list = 27
+  YYSYMBOL_LPAREN = 27
 
-  YYSYMBOL_column_list = 28
+  YYSYMBOL_RPAREN = 28
 
-  YYSYMBOL_column_ref = 29
+  YYSYMBOL_EQ = 29
 
-  YYSYMBOL_table_ref = 30
+  YYSYMBOL_NE = 30
 
-  YYSYMBOL_where_clause = 31
+  YYSYMBOL_LT = 31
 
-  YYSYMBOL_condition = 32
+  YYSYMBOL_GT = 32
 
-  YYSYMBOL_predicate = 33
+  YYSYMBOL_LE = 33
 
-  YYSYMBOL_comp_op = 34
+  YYSYMBOL_GE = 34
 
-  YYSYMBOL_expr = 35
+  YYSYMBOL_IDENT = 35
+
+  YYSYMBOL_STRING = 36
+
+  YYSYMBOL_NUMBER = 37
+
+  YYSYMBOL_YYACCEPT = 38
+
+  YYSYMBOL_input = 39
+
+  YYSYMBOL_select_stmt = 40
+
+  YYSYMBOL_distinct_opt = 41
+
+  YYSYMBOL_select_list = 42
+
+  YYSYMBOL_column_list = 43
+
+  YYSYMBOL_column_ref = 44
+
+  YYSYMBOL_table_ref = 45
+
+  YYSYMBOL_join_list = 46
+
+  YYSYMBOL_join_clause = 47
+
+  YYSYMBOL_join_type = 48
+
+  YYSYMBOL_where_clause = 49
+
+  YYSYMBOL_group_clause = 50
+
+  YYSYMBOL_group_list = 51
+
+  YYSYMBOL_order_clause = 52
+
+  YYSYMBOL_order_list = 53
+
+  YYSYMBOL_order_item = 54
+
+  YYSYMBOL_order_dir = 55
+
+  YYSYMBOL_limit_clause = 56
+
+  YYSYMBOL_offset_clause = 57
+
+  YYSYMBOL_condition = 58
+
+  YYSYMBOL_predicate = 59
+
+  YYSYMBOL_comp_op = 60
+
+  YYSYMBOL_expr = 61
 
   YYEMPTY = -2
   YYERROR = 1
   YYEOF = 0
-  YYNTOKENS = 24
+  YYNTOKENS = 38
 
   YYPACT = [
-    15, -5, 7, -4, -22, 16, 25, 20, -22, -22, -22, 10,
-    11, 12, -22, 26, 29, -22, 17, -8, -22, -22, -8, -8,
-    -22, -22, -22, -3, -22, 4, -22, 3, -8, -8, -22, -22,
-    -22, -22, -22, -22, 5, -22, -22, 30, -22
+    0, 22, 33, 16, -30, -23, -30, -30, -30, -4, 40, 23,
+    -30, 11, -30, 13, 14, -30, -1, 24, -30, 26, -30, 36,
+    37, -30, 4, -30, 49, -30, -30, -30, -8, -30, 45, 13,
+    -8, -8, -30, -30, -30, 6, -30, 25, 46, 44, 50, -30,
+    -3, -8, -8, -30, -30, -30, -30, -30, -30, -13, 14, 47,
+    48, -8, -30, -30, 62, -30, -30, 51, 14, 34, -30, 6,
+    14, 17, 52, -30, 53, -30, -30, -30, -30, 14, 35, -30,
+    -30, -30
   ]
-  YYPGOTO = [-22, -22, -22, -22, -22, 24, -22, -22, -21, -22, -22, -1]
+  YYPGOTO = [
+    -30, -30, -30, -30, -30, -30, -5, 38, -30, 54, -30, -30,
+    -30, -30, -30, -30, -11, -30, -30, -30, -29, -30, -30, 20
+  ]
   YYDEFACT = [
-    0, 0, 0, 0, 4, 8, 0, 5, 6, 1, 2, 0,
-    0, 0, 9, 10, 12, 7, 0, 0, 3, 11, 0, 0,
-    26, 28, 27, 13, 18, 0, 16, 0, 0, 0, 20, 21,
-    22, 23, 24, 25, 0, 17, 14, 15, 19
+    0, 4, 0, 0, 5, 0, 1, 2, 6, 10, 0, 7,
+    8, 0, 12, 0, 0, 11, 13, 0, 9, 0, 15, 22,
+    23, 21, 26, 17, 0, 14, 24, 25, 0, 18, 28, 0,
+    0, 0, 56, 58, 57, 27, 48, 0, 0, 32, 0, 46,
+    0, 0, 0, 50, 51, 52, 53, 54, 55, 0, 0, 0,
+    40, 0, 47, 44, 45, 49, 30, 29, 0, 0, 3, 19,
+    0, 37, 33, 34, 42, 31, 38, 39, 36, 0, 0, 41,
+    35, 43
   ]
-  YYDEFGOTO = [0, 2, 3, 6, 7, 8, 16, 20, 27, 28, 40, 29]
+  YYDEFGOTO = [
+    0, 2, 3, 5, 10, 11, 73, 19, 26, 27, 28, 34,
+    45, 67, 60, 74, 75, 80, 70, 83, 41, 42, 57, 43
+  ]
   YYTABLE = [
-    22, 30, 31, 32, 33, 23, 4, 9, 10, 32, 33, 42,
-    43, 24, 25, 26, 5, 41, 1, 34, 35, 36, 37, 38,
-    39, 11, 24, 25, 26, 12, 13, 14, 15, 5, 19, 18,
-    32, 17, 21, 44
+    12, 36, 8, 1, 49, 50, 13, 47, 48, 21, 32, 20,
+    9, 49, 50, -20, 23, 24, 25, 37, 63, 64, 38, 39,
+    40, 62, 4, 38, 39, 40, -16, 14, 71, 6, 22, -16,
+    23, 24, 25, 78, 79, -16, 7, -16, -16, 15, 17, 16,
+    18, 9, -16, 30, 31, 66, 51, 52, 53, 54, 55, 56,
+    35, 29, 44, 59, 58, 68, 61, 77, 69, 49, 84, 76,
+    85, 46, 82, 72, 81, 65, 0, 0, 33
   ]
   YYCHECK = [
-    8, 22, 23, 6, 7, 13, 11, 0, 12, 6, 7, 32,
-    33, 21, 22, 23, 21, 14, 3, 15, 16, 17, 18, 19,
-    20, 9, 21, 22, 23, 4, 10, 21, 21, 21, 5, 9,
-    6, 13, 21, 40
+    5, 9, 25, 3, 7, 8, 10, 36, 37, 10, 6, 16,
+    35, 7, 8, 11, 12, 13, 14, 27, 49, 50, 35, 36,
+    37, 28, 4, 35, 36, 37, 6, 35, 61, 0, 35, 11,
+    12, 13, 14, 22, 23, 17, 26, 19, 20, 5, 35, 24,
+    35, 35, 26, 15, 15, 58, 29, 30, 31, 32, 33, 34,
+    11, 35, 17, 19, 18, 18, 16, 72, 20, 7, 81, 37,
+    37, 35, 21, 24, 24, 57, -1, -1, 26
   ]
   YYR1 = [
-    0, 24, 25, 26, 27, 27, 28, 28, 29, 29, 30, 30,
-    31, 31, 32, 32, 32, 32, 32, 33, 34, 34, 34, 34,
-    34, 34, 35, 35, 35
+    0, 38, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44,
+    44, 45, 45, 45, 46, 46, 46, 47, 48, 48, 48, 48,
+    48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53,
+    54, 55, 55, 55, 56, 56, 57, 57, 58, 58, 58, 58,
+    58, 59, 60, 60, 60, 60, 60, 60, 61, 61, 61
   ]
   YYR2 = [
-    0, 2, 2, 5, 1, 1, 1, 3, 1, 3, 1, 3,
-    0, 2, 3, 3, 2, 3, 1, 3, 1, 1, 1, 1,
-    1, 1, 1, 1, 1
+    0, 2, 2, 10, 0, 1, 1, 1, 1, 3, 1, 3,
+    2, 1, 3, 2, 0, 1, 2, 5, 0, 1, 1, 1,
+    2, 2, 0, 2, 0, 3, 1, 3, 0, 3, 1, 3,
+    2, 0, 1, 1, 0, 3, 0, 2, 3, 3, 2, 3,
+    1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1
   ]
-  YYLAST = 39
-  YYPACT_NINF = -22
-  YYTABLE_NINF = -1
-  YYFINAL = 9
+  YYLAST = 80
+  YYPACT_NINF = -30
+  YYTABLE_NINF = -21
+  YYFINAL = 6
 
   def yypact : Array(Int32)
     YYPACT
@@ -198,21 +274,39 @@ class SqlParser < Lrama::Runtime::Parser
       # input -> select_stmt SEMICOLON
       result = values.last?
 
-                set_query((values[0]).as(String))
+                set_query(s(values[0]))
 
       result
 
 
     when 3
-      # select_stmt -> SELECT select_list FROM table_ref where_clause
+      # select_stmt -> SELECT distinct_opt select_list FROM table_ref join_list where_clause group_clause order_clause limit_clause
       result = values.last?
 
-                      result = "SELECT #{(values[1]).as(String)} FROM #{(values[3]).as(String)}#{(values[4]).as(String)}"
+                      result = "SELECT#{s(values[1])} #{s(values[2])} FROM #{s(values[4])}#{s(values[5])}#{s(values[6])}#{s(values[7])}#{s(values[8])}#{s(values[9])}"
 
       result
 
 
     when 4
+      # distinct_opt -> %empty
+      result = nil
+
+                       result = ""
+
+      result
+
+
+    when 5
+      # distinct_opt -> DISTINCT
+      result = values.last?
+
+                       result = " DISTINCT"
+
+      result
+
+
+    when 6
       # select_list -> STAR
       result = values.last?
 
@@ -221,70 +315,180 @@ class SqlParser < Lrama::Runtime::Parser
       result
 
 
-    when 5
+    when 7
       # select_list -> column_list
       result = values.last?
 
-                      result = (values[0]).as(String)
-
-      result
-
-
-    when 6
-      # column_list -> column_ref
-      result = values.last?
-
-                      result = (values[0]).as(String)
-
-      result
-
-
-    when 7
-      # column_list -> column_list COMMA column_ref
-      result = values.last?
-
-                      result = "#{(values[0]).as(String)}, #{(values[2]).as(String)}"
+                      result = s(values[0])
 
       result
 
 
     when 8
-      # column_ref -> IDENT
+      # column_list -> column_ref
       result = values.last?
 
-                     result = (values[0]).as(String)
+                      result = s(values[0])
 
       result
 
 
     when 9
-      # column_ref -> IDENT AS IDENT
+      # column_list -> column_list COMMA column_ref
       result = values.last?
 
-                     result = "#{(values[0]).as(String)} AS #{(values[2]).as(String)}"
+                      result = "#{s(values[0])}, #{s(values[2])}"
 
       result
 
 
     when 10
-      # table_ref -> IDENT
+      # column_ref -> IDENT
       result = values.last?
 
-                    result = (values[0]).as(String)
+                     result = s(values[0])
 
       result
 
 
     when 11
-      # table_ref -> IDENT AS IDENT
+      # column_ref -> IDENT AS IDENT
       result = values.last?
 
-                    result = "#{(values[0]).as(String)} AS #{(values[2]).as(String)}"
+                     result = "#{s(values[0])} AS #{s(values[2])}"
 
       result
 
 
     when 12
+      # column_ref -> IDENT IDENT
+      result = values.last?
+
+                     result = "#{s(values[0])} #{s(values[1])}"
+
+      result
+
+
+    when 13
+      # table_ref -> IDENT
+      result = values.last?
+
+                    result = s(values[0])
+
+      result
+
+
+    when 14
+      # table_ref -> IDENT AS IDENT
+      result = values.last?
+
+                    result = "#{s(values[0])} AS #{s(values[2])}"
+
+      result
+
+
+    when 15
+      # table_ref -> IDENT IDENT
+      result = values.last?
+
+                    result = "#{s(values[0])} #{s(values[1])}"
+
+      result
+
+
+    when 16
+      # join_list -> %empty
+      result = nil
+
+                    result = ""
+
+      result
+
+
+    when 17
+      # join_list -> join_clause
+      result = values.last?
+
+                    result = " #{s(values[0])}"
+
+      result
+
+
+    when 18
+      # join_list -> join_list join_clause
+      result = values.last?
+
+                    result = "#{s(values[0])} #{s(values[1])}"
+
+      result
+
+
+    when 19
+      # join_clause -> join_type JOIN table_ref ON condition
+      result = values.last?
+
+                      prefix = s(values[0])
+                      prefix = prefix.empty? ? "" : "#{prefix} "
+                      result = "#{prefix}JOIN #{s(values[2])} ON #{s(values[4])}"
+
+      result
+
+
+    when 20
+      # join_type -> %empty
+      result = nil
+
+                    result = ""
+
+      result
+
+
+    when 21
+      # join_type -> INNER
+      result = values.last?
+
+                    result = "INNER"
+
+      result
+
+
+    when 22
+      # join_type -> LEFT
+      result = values.last?
+
+                    result = "LEFT"
+
+      result
+
+
+    when 23
+      # join_type -> RIGHT
+      result = values.last?
+
+                    result = "RIGHT"
+
+      result
+
+
+    when 24
+      # join_type -> LEFT OUTER
+      result = values.last?
+
+                    result = "LEFT OUTER"
+
+      result
+
+
+    when 25
+      # join_type -> RIGHT OUTER
+      result = values.last?
+
+                    result = "RIGHT OUTER"
+
+      result
+
+
+    when 26
       # where_clause -> %empty
       result = nil
 
@@ -293,134 +497,278 @@ class SqlParser < Lrama::Runtime::Parser
       result
 
 
-    when 13
+    when 27
       # where_clause -> WHERE condition
       result = values.last?
 
-                       result = " WHERE #{(values[1]).as(String)}"
+                       result = " WHERE #{s(values[1])}"
 
       result
 
 
-    when 14
+    when 28
+      # group_clause -> %empty
+      result = nil
+
+                       result = ""
+
+      result
+
+
+    when 29
+      # group_clause -> GROUP BY group_list
+      result = values.last?
+
+                       result = " GROUP BY #{s(values[2])}"
+
+      result
+
+
+    when 30
+      # group_list -> column_ref
+      result = values.last?
+
+                     result = s(values[0])
+
+      result
+
+
+    when 31
+      # group_list -> group_list COMMA column_ref
+      result = values.last?
+
+                     result = "#{s(values[0])}, #{s(values[2])}"
+
+      result
+
+
+    when 32
+      # order_clause -> %empty
+      result = nil
+
+                       result = ""
+
+      result
+
+
+    when 33
+      # order_clause -> ORDER BY order_list
+      result = values.last?
+
+                       result = " ORDER BY #{s(values[2])}"
+
+      result
+
+
+    when 34
+      # order_list -> order_item
+      result = values.last?
+
+                     result = s(values[0])
+
+      result
+
+
+    when 35
+      # order_list -> order_list COMMA order_item
+      result = values.last?
+
+                     result = "#{s(values[0])}, #{s(values[2])}"
+
+      result
+
+
+    when 36
+      # order_item -> column_ref order_dir
+      result = values.last?
+
+                     result = "#{s(values[0])}#{s(values[1])}"
+
+      result
+
+
+    when 37
+      # order_dir -> %empty
+      result = nil
+
+                    result = ""
+
+      result
+
+
+    when 38
+      # order_dir -> ASC
+      result = values.last?
+
+                    result = " ASC"
+
+      result
+
+
+    when 39
+      # order_dir -> DESC
+      result = values.last?
+
+                    result = " DESC"
+
+      result
+
+
+    when 40
+      # limit_clause -> %empty
+      result = nil
+
+                      result = ""
+
+      result
+
+
+    when 41
+      # limit_clause -> LIMIT NUMBER offset_clause
+      result = values.last?
+
+                      result = " LIMIT #{s(values[1])}#{s(values[2])}"
+
+      result
+
+
+    when 42
+      # offset_clause -> %empty
+      result = nil
+
+                       result = ""
+
+      result
+
+
+    when 43
+      # offset_clause -> OFFSET NUMBER
+      result = values.last?
+
+                       result = " OFFSET #{s(values[1])}"
+
+      result
+
+
+    when 44
       # condition -> condition AND condition
       result = values.last?
 
-                    result = "(#{(values[0]).as(String)} AND #{(values[2]).as(String)})"
+                    result = "(#{s(values[0])} AND #{s(values[2])})"
 
       result
 
 
-    when 15
+    when 45
       # condition -> condition OR condition
       result = values.last?
 
-                    result = "(#{(values[0]).as(String)} OR #{(values[2]).as(String)})"
+                    result = "(#{s(values[0])} OR #{s(values[2])})"
 
       result
 
 
-    when 16
+    when 46
       # condition -> NOT condition
       result = values.last?
 
-                    result = "(NOT #{(values[1]).as(String)})"
+                    result = "(NOT #{s(values[1])})"
 
       result
 
 
-    when 17
+    when 47
       # condition -> LPAREN condition RPAREN
       result = values.last?
 
-                    result = "(#{(values[1]).as(String)})"
+                    result = "(#{s(values[1])})"
 
       result
 
 
-    when 18
+    when 48
       # condition -> predicate
       result = values.last?
 
-                    result = (values[0]).as(String)
+                    result = s(values[0])
 
       result
 
 
-    when 19
+    when 49
       # predicate -> expr comp_op expr
       result = values.last?
 
-                   result = "#{(values[0]).as(String)} #{(values[1]).as(String)} #{(values[2]).as(String)}"
+                   result = "#{s(values[0])} #{s(values[1])} #{s(values[2])}"
 
       result
 
 
-    when 20
+    when 50
       # comp_op -> EQ
       result = values.last?
        result = "="
       result
 
 
-    when 21
+    when 51
       # comp_op -> NE
       result = values.last?
        result = "!="
       result
 
 
-    when 22
+    when 52
       # comp_op -> LT
       result = values.last?
        result = "<"
       result
 
 
-    when 23
+    when 53
       # comp_op -> GT
       result = values.last?
        result = ">"
       result
 
 
-    when 24
+    when 54
       # comp_op -> LE
       result = values.last?
        result = "<="
       result
 
 
-    when 25
+    when 55
       # comp_op -> GE
       result = values.last?
        result = ">="
       result
 
 
-    when 26
+    when 56
       # expr -> IDENT
       result = values.last?
 
-               result = (values[0]).as(String)
+               result = s(values[0])
 
       result
 
 
-    when 27
+    when 57
       # expr -> NUMBER
       result = values.last?
 
-               result = (values[0]).as(String)
+               result = s(values[0])
 
       result
 
 
-    when 28
+    when 58
       # expr -> STRING
       result = values.last?
 
-               result = (values[0]).as(String)
+               result = s(values[0])
 
       result
 
@@ -1209,12 +1557,26 @@ class SqlParserLexer
 
   private def keyword_token(start : Int32, length : Int32)
     return SqlParser::YYSYMBOL_SELECT if keyword_match?(start, length, "SELECT")
+    return SqlParser::YYSYMBOL_DISTINCT if keyword_match?(start, length, "DISTINCT")
     return SqlParser::YYSYMBOL_FROM if keyword_match?(start, length, "FROM")
     return SqlParser::YYSYMBOL_WHERE if keyword_match?(start, length, "WHERE")
     return SqlParser::YYSYMBOL_AND if keyword_match?(start, length, "AND")
     return SqlParser::YYSYMBOL_OR if keyword_match?(start, length, "OR")
     return SqlParser::YYSYMBOL_NOT if keyword_match?(start, length, "NOT")
     return SqlParser::YYSYMBOL_AS if keyword_match?(start, length, "AS")
+    return SqlParser::YYSYMBOL_JOIN if keyword_match?(start, length, "JOIN")
+    return SqlParser::YYSYMBOL_LEFT if keyword_match?(start, length, "LEFT")
+    return SqlParser::YYSYMBOL_RIGHT if keyword_match?(start, length, "RIGHT")
+    return SqlParser::YYSYMBOL_INNER if keyword_match?(start, length, "INNER")
+    return SqlParser::YYSYMBOL_OUTER if keyword_match?(start, length, "OUTER")
+    return SqlParser::YYSYMBOL_ON if keyword_match?(start, length, "ON")
+    return SqlParser::YYSYMBOL_GROUP if keyword_match?(start, length, "GROUP")
+    return SqlParser::YYSYMBOL_BY if keyword_match?(start, length, "BY")
+    return SqlParser::YYSYMBOL_ORDER if keyword_match?(start, length, "ORDER")
+    return SqlParser::YYSYMBOL_LIMIT if keyword_match?(start, length, "LIMIT")
+    return SqlParser::YYSYMBOL_OFFSET if keyword_match?(start, length, "OFFSET")
+    return SqlParser::YYSYMBOL_ASC if keyword_match?(start, length, "ASC")
+    return SqlParser::YYSYMBOL_DESC if keyword_match?(start, length, "DESC")
     nil
   end
 
@@ -1251,6 +1613,10 @@ end
 
 
 class SqlParser
+  def s(value : Lrama::Runtime::Value) : String
+    value.as(String)
+  end
+
   def set_query(value : String)
     @query = value
   end
