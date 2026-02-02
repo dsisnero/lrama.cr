@@ -24,6 +24,27 @@ ameba src spec
 crystal spec
 ```
 
+## Profiling And Error Recovery
+
+Profiling uses Crystal-native timing and GC stats:
+
+```
+crystal run src/lrama/main.cr -- --profile=memory sample/calc.y -o sample/calc_parser.cr
+```
+
+This prints lines like `profile.time total=...` and `profile.memory.*` deltas to STDERR.
+For call-stack profiling, use an external profiler and enable the flag for a hint:
+
+```
+crystal run src/lrama/main.cr -- --profile=call-stack sample/calc.y -o sample/calc_parser.cr
+```
+
+Error recovery is controlled at codegen time:
+
+```
+crystal run src/lrama/main.cr -- -e sample/calc.y -o sample/calc_parser.cr
+```
+
 ## Layout
 
 - `src/` - Crystal implementation
