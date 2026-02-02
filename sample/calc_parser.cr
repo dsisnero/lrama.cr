@@ -210,7 +210,6 @@ class CalcParserLexer
 
   YYLEX_TABLES = [
     [
-    [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 2, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1,
@@ -232,13 +231,10 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1,
+    -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -256,9 +252,6 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -280,9 +273,6 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -304,9 +294,6 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -328,9 +315,6 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -352,9 +336,6 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -376,9 +357,6 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -400,9 +378,6 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -424,9 +399,9 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1
-  ],
-    [
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -451,7 +426,7 @@ class CalcParserLexer
     -1, -1, -1, -1
   ]
   ]
-  ]
+  YYLEX_ROW_WIDTH = 256
   YYLEX_ACCEPTS = [
     [-1, 0, 2, 7, 8, 5, 3, 4, 6, 1]
   ]
@@ -461,12 +436,14 @@ class CalcParserLexer
   YYLEX_VALUE_KIND = [0, 1, 0, 0, 0, 0, 0, 0, 0]
   YYLEX_KEYWORD = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+
   STATE_INITIAL = 0
 
 
   def initialize(@input : String)
     @index = 0
-    @length = @input.bytesize
+    @bytes = @input.to_slice
+    @length = @bytes.size
     @state = STATE_INITIAL
   end
 
@@ -480,19 +457,19 @@ class CalcParserLexer
   def next_token : Lrama::Runtime::Token
     while @index < @length
       start = @index
-      state = 0
+      dfa_state = 0
       last_accept = -1
       last_index = start
       table = YYLEX_TABLES[@state]
       accept = YYLEX_ACCEPTS[@state]
 
       while @index < @length
-        byte = @input.byte_at(@index)
-        next_state = table[state][byte]
+        byte = @bytes[@index]
+        next_state = table[dfa_state * YYLEX_ROW_WIDTH + byte]
         break if next_state < 0
-        state = next_state
+        dfa_state = next_state
         @index += 1
-        rule = accept[state]
+        rule = accept[dfa_state]
         if rule >= 0
           last_accept = rule
           last_index = @index
@@ -500,7 +477,7 @@ class CalcParserLexer
       end
 
       if last_accept < 0
-        byte = @input.byte_at(start)
+        byte = @bytes[start]
         raise "Unexpected character: #{byte}"
       end
 
@@ -521,17 +498,16 @@ class CalcParserLexer
     if value_kind == 0
       return Lrama::Runtime::Token.new(token_id)
     end
-    text = @input.byte_slice(start, length) || ""
     value =
       case value_kind
       when 1
-        text.to_i
+        parse_int(start, length)
       when 2
-        text.to_f
+        parse_float(start, length)
       when 3
-        text
+        String.new(@bytes[start, length])
       when 4
-        text
+        String.new(@bytes[start, length])
       else
         nil
       end
@@ -539,6 +515,38 @@ class CalcParserLexer
   end
 
 
+
+  private def parse_int(start : Int32, length : Int32)
+    value = 0
+    i = 0
+    while i < length
+      byte = @bytes[start + i]
+      value = value * 10 + (byte - 48)
+      i += 1
+    end
+    value
+  end
+
+  private def parse_float(start : Int32, length : Int32)
+    value = 0.0
+    i = 0
+    while i < length
+      byte = @bytes[start + i]
+      break if byte == 46
+      value = value * 10.0 + (byte - 48)
+      i += 1
+    end
+    return value if i >= length
+    i += 1
+    scale = 0.1
+    while i < length
+      byte = @bytes[start + i]
+      value += (byte - 48) * scale
+      scale *= 0.1
+      i += 1
+    end
+    value
+  end
 end
 
 class CalcParser

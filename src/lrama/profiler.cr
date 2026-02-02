@@ -8,18 +8,18 @@ module Lrama
       if options[:memory]?
         GC.collect
         before = GC.stats
-        start = Time.monotonic
+        start = Time.instant
         result = yield
         GC.collect
         after = GC.stats
-        elapsed = (Time.monotonic - start).total_seconds
+        elapsed = (Time.instant - start).total_seconds
         io.puts "profile.time total=#{format_seconds(elapsed)}"
         report_gc_stats(io, before, after)
         result
       else
-        start = Time.monotonic
+        start = Time.instant
         result = yield
-        elapsed = (Time.monotonic - start).total_seconds
+        elapsed = (Time.instant - start).total_seconds
         io.puts "profile.time total=#{format_seconds(elapsed)}"
         result
       end
@@ -34,11 +34,11 @@ module Lrama
     end
 
     private def self.report_gc_stats(io : IO, before : GC::Stats, after : GC::Stats)
-      report_stat(io, "bytes_since_gc", before.bytes_since_gc, after.bytes_since_gc)
-      report_stat(io, "free_bytes", before.free_bytes, after.free_bytes)
-      report_stat(io, "heap_size", before.heap_size, after.heap_size)
-      report_stat(io, "total_bytes", before.total_bytes, after.total_bytes)
-      report_stat(io, "unmapped_bytes", before.unmapped_bytes, after.unmapped_bytes)
+      report_stat(io, "bytes_since_gc", before.bytes_since_gc.to_i64, after.bytes_since_gc.to_i64)
+      report_stat(io, "free_bytes", before.free_bytes.to_i64, after.free_bytes.to_i64)
+      report_stat(io, "heap_size", before.heap_size.to_i64, after.heap_size.to_i64)
+      report_stat(io, "total_bytes", before.total_bytes.to_i64, after.total_bytes.to_i64)
+      report_stat(io, "unmapped_bytes", before.unmapped_bytes.to_i64, after.unmapped_bytes.to_i64)
     end
 
     private def self.report_stat(io : IO, name : String, before : Int64, after : Int64)

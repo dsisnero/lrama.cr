@@ -177,10 +177,20 @@ module Lrama
         "[\n    #{tables.join(",\n    ")}\n  ]"
       end
 
+      private def format_flat_tables(values : Array(Array(Int32)))
+        return "[] of Array(Int32)" if values.empty?
+        tables = values.map { |table| format_array(table) }
+        "[\n    #{tables.join(",\n    ")}\n  ]"
+      end
+
       private def format_array_of_arrays(values : Array(Array(Int32)))
         return "[] of Array(Int32)" if values.empty?
         rows = values.map { |row| format_array(row) }
         "[\n    #{rows.join(",\n    ")}\n  ]"
+      end
+
+      private def flatten_table(rows : Array(Array(Int32)))
+        rows.flat_map { |row| row }
       end
 
       private def value_kind_index(kind : LexerSpec::ValueKind)
@@ -205,6 +215,15 @@ module Lrama
           key = lexer_keywords_case_insensitive? ? name.upcase : name
           "    return #{@class_name}::YYSYMBOL_#{name} if keyword_match?(start, length, \"#{key}\")"
         end.join("\n")
+      end
+
+      private def keyword_map_lines
+        keywords = lexer_keywords
+        return "" if keywords.empty?
+        keywords.map do |name|
+          key = lexer_keywords_case_insensitive? ? name.upcase : name
+          "\"#{key}\" => #{@class_name}::YYSYMBOL_#{name}"
+        end.join(", ")
       end
 
       private def state_const_name(name : String)

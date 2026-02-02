@@ -106,20 +106,25 @@ end
 class <%= @class_name %>Lexer
   include Lrama::Runtime::Lexer
 
-  YYLEX_TABLES = <%= format_tables(lexer.tables.map(&.transitions)) %>
+  YYLEX_TABLES = <%= format_flat_tables(lexer.tables.map { |table| flatten_table(table.transitions) }) %>
+  YYLEX_ROW_WIDTH = 256
   YYLEX_ACCEPTS = <%= format_array_of_arrays(lexer.tables.map(&.accept)) %>
   YYLEX_STATE_COUNT = <%= lexer.states.size %>
   YYLEX_KIND = [<%= lexer_rules.map { |rule| rule.skip? ? 0 : 1 }.join(", ") %>]
   YYLEX_TOKEN = [<%= lexer_rules.map { |rule| rule.token? ? "#{@class_name}::YYSYMBOL_#{rule.name}" : "-1" }.join(", ") %>]
   YYLEX_VALUE_KIND = [<%= lexer_rules.map { |rule| value_kind_index(rule.value_kind) }.join(", ") %>]
   YYLEX_KEYWORD = [<%= lexer_rules.map { |rule| rule.keyword? ? 1 : 0 }.join(", ") %>]
+  <% unless lexer_keywords.empty? %>
+  YYLEX_KEYWORD_MAP = {<%= keyword_map_lines %>}
+  <% end %>
   <% lexer.states.each_with_index do |name, index| %>
   STATE_<%= state_const_name(name) %> = <%= index %>
   <% end %>
 
   def initialize(@input : String)
     @index = 0
-    @length = @input.bytesize
+    @bytes = @input.to_slice
+    @length = @bytes.size
     @state = STATE_INITIAL
   end
 
@@ -133,19 +138,19 @@ class <%= @class_name %>Lexer
   def next_token : Lrama::Runtime::Token
     while @index < @length
       start = @index
-      state = 0
+      dfa_state = 0
       last_accept = -1
       last_index = start
       table = YYLEX_TABLES[@state]
       accept = YYLEX_ACCEPTS[@state]
 
       while @index < @length
-        byte = @input.byte_at(@index)
-        next_state = table[state][byte]
+        byte = @bytes[@index]
+        next_state = table[dfa_state * YYLEX_ROW_WIDTH + byte]
         break if next_state < 0
-        state = next_state
+        dfa_state = next_state
         @index += 1
-        rule = accept[state]
+        rule = accept[dfa_state]
         if rule >= 0
           last_accept = rule
           last_index = @index
@@ -153,7 +158,7 @@ class <%= @class_name %>Lexer
       end
 
       if last_accept < 0
-        byte = @input.byte_at(start)
+        byte = @bytes[start]
         raise "Unexpected character: #{byte}"
       end
 
@@ -181,17 +186,16 @@ class <%= @class_name %>Lexer
     if value_kind == 0
       return Lrama::Runtime::Token.new(token_id)
     end
-    text = @input.byte_slice(start, length) || ""
     value =
       case value_kind
       when 1
-        text.to_i
+        parse_int(start, length)
       when 2
-        text.to_f
+        parse_float(start, length)
       when 3
-        text
+        String.new(@bytes[start, length])
       when 4
-        text
+        String.new(@bytes[start, length])
       else
         nil
       end
@@ -200,27 +204,45 @@ class <%= @class_name %>Lexer
 
   <% unless lexer_keywords.empty? %>
   private def keyword_token(start : Int32, length : Int32)
-<%= keyword_case_lines %>
-    nil
-  end
-
-  private def keyword_match?(start : Int32, length : Int32, keyword : String)
-    return false unless length == keyword.bytesize
-    bytes = keyword.to_slice
-    i = 0
-    while i < length
-      byte = @input.byte_at(start + i)
-      <% if lexer_keywords_case_insensitive? %>
-      if byte >= 97_u8 && byte <= 122_u8
-        byte -= 32_u8
-      end
-      <% end %>
-      return false if byte != bytes[i]
-      i += 1
-    end
-    true
+    keyword = String.new(@bytes[start, length])
+    <% if lexer_keywords_case_insensitive? %>
+    keyword = keyword.upcase
+    <% end %>
+    YYLEX_KEYWORD_MAP[keyword]?
   end
   <% end %>
+
+  private def parse_int(start : Int32, length : Int32)
+    value = 0
+    i = 0
+    while i < length
+      byte = @bytes[start + i]
+      value = value * 10 + (byte - 48)
+      i += 1
+    end
+    value
+  end
+
+  private def parse_float(start : Int32, length : Int32)
+    value = 0.0
+    i = 0
+    while i < length
+      byte = @bytes[start + i]
+      break if byte == 46
+      value = value * 10.0 + (byte - 48)
+      i += 1
+    end
+    return value if i >= length
+    i += 1
+    scale = 0.1
+    while i < length
+      byte = @bytes[start + i]
+      value += (byte - 48) * scale
+      scale *= 0.1
+      i += 1
+    end
+    value
+  end
 end
 
 class <%= @class_name %>
