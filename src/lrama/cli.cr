@@ -42,7 +42,7 @@ module Lrama
         tables = TableBuilder.new(states, grammar).to_tables
         class_name = parser_class_name(options.outfile)
         File.open(options.outfile, "w+") do |file|
-          Generator::Crystal.new(grammar, tables, class_name).render(file)
+          Generator::Crystal.new(grammar, tables, class_name, options.error_recovery?).render(file)
         end
 
         warnings = Warnings.new(Logger.new, options.warnings?)

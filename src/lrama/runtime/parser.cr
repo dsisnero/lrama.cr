@@ -26,6 +26,7 @@ module Lrama
       abstract def error_symbol : Int32
       abstract def eof_symbol : Int32
       abstract def reduce(rule : Int32, values : Array(Value), locations : Array(Location?)) : Value
+      abstract def error_recovery? : Bool
 
       # ameba:disable Metrics/CyclomaticComplexity
       def parse(lexer : Lexer) : Int32
@@ -40,6 +41,7 @@ module Lrama
           case parser_action
           when :syntax_error
             token = lookahead || Token.new(error_symbol)
+            return 1 unless error_recovery?
             if @error_status == 3 && lookahead
               return 1 if lookahead.sym == eof_symbol
               lookahead = nil

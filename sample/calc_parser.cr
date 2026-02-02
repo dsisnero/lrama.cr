@@ -65,6 +65,7 @@ class CalcParser < Lrama::Runtime::Parser
   YYPACT_NINF = -5
   YYTABLE_NINF = -1
   YYFINAL = 2
+  ERROR_RECOVERY = false
 
   def yypact : Array(Int32)
     YYPACT
@@ -124,6 +125,10 @@ class CalcParser < Lrama::Runtime::Parser
 
   def eof_symbol : Int32
     YYEOF
+  end
+
+  def error_recovery? : Bool
+    ERROR_RECOVERY
   end
 
   def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value
@@ -203,13 +208,38 @@ end
 class CalcParserLexer
   include Lrama::Runtime::Lexer
 
-  YYLEX_TABLE = [
+  YYLEX_TABLES = [
     [
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1,
+    [
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 2, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1,
+    -1, -1, -1, -1, 3, 4, 5, 6, -1, 7, -1, 8,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 9, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, 2, 3, 4, 5, -1, 6, -1, 7,
-    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1
+  ],
+    [
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -401,7 +431,7 @@ class CalcParserLexer
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, -1, -1,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 9, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -421,14 +451,30 @@ class CalcParserLexer
     -1, -1, -1, -1
   ]
   ]
-  YYLEX_ACCEPT = [-1, 2, 7, 8, 5, 3, 4, 6, 1]
+  ]
+  YYLEX_ACCEPTS = [
+    [-1, 0, 2, 7, 8, 5, 3, 4, 6, 1]
+  ]
+  YYLEX_STATE_COUNT = 1
   YYLEX_KIND = [0, 1, 1, 1, 1, 1, 1, 1, 1]
   YYLEX_TOKEN = [-1, CalcParser::YYSYMBOL_NUM, CalcParser::YYSYMBOL_LF, CalcParser::YYSYMBOL_PLUS, CalcParser::YYSYMBOL_MINUS, CalcParser::YYSYMBOL_STAR, CalcParser::YYSYMBOL_SLASH, CalcParser::YYSYMBOL_LPAREN, CalcParser::YYSYMBOL_RPAREN]
   YYLEX_VALUE_KIND = [0, 1, 0, 0, 0, 0, 0, 0, 0]
+  YYLEX_KEYWORD = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+  STATE_INITIAL = 0
+
 
   def initialize(@input : String)
     @index = 0
     @length = @input.bytesize
+    @state = STATE_INITIAL
+  end
+
+  def begin(state : Int32)
+    if state < 0 || state >= YYLEX_STATE_COUNT
+      raise "Unknown lexer state: #{state}"
+    end
+    @state = state
   end
 
   def next_token : Lrama::Runtime::Token
@@ -437,14 +483,16 @@ class CalcParserLexer
       state = 0
       last_accept = -1
       last_index = start
+      table = YYLEX_TABLES[@state]
+      accept = YYLEX_ACCEPTS[@state]
 
       while @index < @length
         byte = @input.byte_at(@index)
-        next_state = YYLEX_TABLE[state][byte]
+        next_state = table[state][byte]
         break if next_state < 0
         state = next_state
         @index += 1
-        rule = YYLEX_ACCEPT[state]
+        rule = accept[state]
         if rule >= 0
           last_accept = rule
           last_index = @index
@@ -457,20 +505,25 @@ class CalcParserLexer
       end
 
       @index = last_index
-      text = @input.byte_slice(start, last_index - start) || ""
       if YYLEX_KIND[last_accept] == 0
         next
       end
-      return build_token(last_accept, text)
+      return build_token(last_accept, start, last_index - start)
     end
 
     Lrama::Runtime::Token.new(CalcParser::YYEOF)
   end
 
-  private def build_token(rule_index : Int32, text : String)
+  private def build_token(rule_index : Int32, start : Int32, length : Int32)
     token_id = YYLEX_TOKEN[rule_index]
+
+    value_kind = YYLEX_VALUE_KIND[rule_index]
+    if value_kind == 0
+      return Lrama::Runtime::Token.new(token_id)
+    end
+    text = @input.byte_slice(start, length) || ""
     value =
-      case YYLEX_VALUE_KIND[rule_index]
+      case value_kind
       when 1
         text.to_i
       when 2
@@ -484,6 +537,8 @@ class CalcParserLexer
       end
     Lrama::Runtime::Token.new(token_id, value)
   end
+
+
 end
 
 class CalcParser

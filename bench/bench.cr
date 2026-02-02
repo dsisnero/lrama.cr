@@ -105,6 +105,10 @@ class BenchParser < Lrama::Runtime::Parser
     YYEOF
   end
 
+  def error_recovery? : Bool
+    false
+  end
+
   def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value
     _ = rule
     _ = values

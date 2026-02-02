@@ -110,6 +110,10 @@ private class RuntimeParser < Lrama::Runtime::Parser
     SYM_EOF
   end
 
+  def error_recovery? : Bool
+    false
+  end
+
   def reduce(
     rule : Int32,
     values : Array(Lrama::Runtime::Value),

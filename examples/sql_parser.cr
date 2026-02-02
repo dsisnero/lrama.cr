@@ -199,6 +199,7 @@ class SqlParser < Lrama::Runtime::Parser
   YYPACT_NINF = -30
   YYTABLE_NINF = -21
   YYFINAL = 6
+  ERROR_RECOVERY = false
 
   def yypact : Array(Int32)
     YYPACT
@@ -258,6 +259,10 @@ class SqlParser < Lrama::Runtime::Parser
 
   def eof_symbol : Int32
     YYEOF
+  end
+
+  def error_recovery? : Bool
+    ERROR_RECOVERY
   end
 
   def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value
@@ -1444,12 +1449,14 @@ class SqlParserLexer
 
   private def build_token(rule_index : Int32, start : Int32, length : Int32)
     token_id = YYLEX_TOKEN[rule_index]
+
     if YYLEX_KEYWORD[rule_index] == 1
       if keyword_id = keyword_token(start, length)
         token_id = keyword_id
         return Lrama::Runtime::Token.new(token_id)
       end
     end
+
     value_kind = YYLEX_VALUE_KIND[rule_index]
     if value_kind == 0
       return Lrama::Runtime::Token.new(token_id)

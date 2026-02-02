@@ -40,7 +40,12 @@ module Lrama
         end
       end
 
-      def initialize(@grammar : Grammar, @tables : Tables, @class_name : String = "Parser")
+      def initialize(
+        @grammar : Grammar,
+        @tables : Tables,
+        @class_name : String = "Parser",
+        @error_recovery : Bool = false,
+      )
       end
 
       def render(io : IO)
