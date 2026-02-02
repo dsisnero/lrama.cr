@@ -106,8 +106,9 @@ end
 class <%= @class_name %>Lexer
   include Lrama::Runtime::Lexer
 
-  YYLEX_TABLES = <%= format_flat_tables(lexer.tables.map { |table| flatten_table(table.transitions) }) %>
+  YYLEX_TABLES = <%= format_flat_tables(lexer_tables_flat) %>
   YYLEX_ROW_WIDTH = 256
+  YYLEX_ROW_MAP = <%= format_array_of_arrays(lexer_row_maps) %>
   YYLEX_ACCEPTS = <%= format_array_of_arrays(lexer.tables.map(&.accept)) %>
   YYLEX_STATE_COUNT = <%= lexer.states.size %>
   YYLEX_KIND = [<%= lexer_rules.map { |rule| rule.skip? ? 0 : 1 }.join(", ") %>]
@@ -115,7 +116,9 @@ class <%= @class_name %>Lexer
   YYLEX_VALUE_KIND = [<%= lexer_rules.map { |rule| value_kind_index(rule.value_kind) }.join(", ") %>]
   YYLEX_KEYWORD = [<%= lexer_rules.map { |rule| rule.keyword? ? 1 : 0 }.join(", ") %>]
   <% unless lexer_keywords.empty? %>
-  YYLEX_KEYWORD_MAP = {<%= keyword_map_lines %>}
+  YYLEX_USE_KEYWORD_TRIE = <%= use_keyword_trie? ? "true" : "false" %>
+  YYLEX_KEYWORD_CHILDREN = <%= format_array_of_arrays(keyword_trie_children) %>
+  YYLEX_KEYWORD_TOKEN = <%= format_array(keyword_trie_tokens) %>
   <% end %>
   <% lexer.states.each_with_index do |name, index| %>
   STATE_<%= state_const_name(name) %> = <%= index %>
@@ -142,11 +145,15 @@ class <%= @class_name %>Lexer
       last_accept = -1
       last_index = start
       table = YYLEX_TABLES[@state]
+      row_map = YYLEX_ROW_MAP[@state]
+      use_row_map = !row_map.empty?
       accept = YYLEX_ACCEPTS[@state]
 
       while @index < @length
         byte = @bytes[@index]
-        next_state = table[dfa_state * YYLEX_ROW_WIDTH + byte]
+        byte_value = byte.to_i
+        row_index = use_row_map ? row_map[dfa_state] : dfa_state
+        next_state = table[row_index * YYLEX_ROW_WIDTH + byte_value]
         break if next_state < 0
         dfa_state = next_state
         @index += 1
@@ -204,12 +211,60 @@ class <%= @class_name %>Lexer
 
   <% unless lexer_keywords.empty? %>
   private def keyword_token(start : Int32, length : Int32)
-    keyword = String.new(@bytes[start, length])
-    <% if lexer_keywords_case_insensitive? %>
-    keyword = keyword.upcase
+    return nil if length == 0
+    if YYLEX_USE_KEYWORD_TRIE
+      node = 0
+      idx = start
+      last = start + length
+      while idx < last
+        byte = @bytes[idx]
+        byte_value = byte.to_i
+        <% if lexer_keywords_case_insensitive? %>
+        if byte >= 97_u8 && byte <= 122_u8
+          byte -= 32_u8
+          byte_value = byte.to_i
+        end
+        <% end %>
+        children = YYLEX_KEYWORD_CHILDREN[node]
+        next_node = -1
+        i = 0
+        while i < children.size
+          if children[i] == byte_value
+            next_node = children[i + 1]
+            break
+          end
+          i += 2
+        end
+        return nil if next_node < 0
+        node = next_node
+        idx += 1
+      end
+      token = YYLEX_KEYWORD_TOKEN[node]
+      return token >= 0 ? token : nil
+    end
+    <% unless lexer_keywords.empty? %>
+<%= keyword_case_lines %>
     <% end %>
-    YYLEX_KEYWORD_MAP[keyword]?
+    nil
   end
+  <% unless lexer_keywords.empty? %>
+  private def keyword_match?(start : Int32, length : Int32, keyword : String)
+    return false unless length == keyword.bytesize
+    bytes = keyword.to_slice
+    i = 0
+    while i < length
+      byte = @bytes[start + i]
+      <% if lexer_keywords_case_insensitive? %>
+      if byte >= 97_u8 && byte <= 122_u8
+        byte -= 32_u8
+      end
+      <% end %>
+      return false if byte != bytes[i]
+      i += 1
+    end
+    true
+  end
+  <% end %>
   <% end %>
 
   private def parse_int(start : Int32, length : Int32)

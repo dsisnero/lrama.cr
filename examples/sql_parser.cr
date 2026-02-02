@@ -1319,6 +1319,9 @@ class SqlParserLexer
   ]
   ]
   YYLEX_ROW_WIDTH = 256
+  YYLEX_ROW_MAP = [
+    [] of Int32
+  ]
   YYLEX_ACCEPTS = [
     [
     -1, 0, -1, -1, 7, 8, 5, 4, 2, 6, 13, 12,
@@ -1331,7 +1334,9 @@ class SqlParserLexer
   YYLEX_VALUE_KIND = [0, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   YYLEX_KEYWORD = [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-  YYLEX_KEYWORD_MAP = {"SELECT" => SqlParser::YYSYMBOL_SELECT, "DISTINCT" => SqlParser::YYSYMBOL_DISTINCT, "FROM" => SqlParser::YYSYMBOL_FROM, "WHERE" => SqlParser::YYSYMBOL_WHERE, "AND" => SqlParser::YYSYMBOL_AND, "OR" => SqlParser::YYSYMBOL_OR, "NOT" => SqlParser::YYSYMBOL_NOT, "AS" => SqlParser::YYSYMBOL_AS, "JOIN" => SqlParser::YYSYMBOL_JOIN, "LEFT" => SqlParser::YYSYMBOL_LEFT, "RIGHT" => SqlParser::YYSYMBOL_RIGHT, "INNER" => SqlParser::YYSYMBOL_INNER, "OUTER" => SqlParser::YYSYMBOL_OUTER, "ON" => SqlParser::YYSYMBOL_ON, "GROUP" => SqlParser::YYSYMBOL_GROUP, "BY" => SqlParser::YYSYMBOL_BY, "ORDER" => SqlParser::YYSYMBOL_ORDER, "LIMIT" => SqlParser::YYSYMBOL_LIMIT, "OFFSET" => SqlParser::YYSYMBOL_OFFSET, "ASC" => SqlParser::YYSYMBOL_ASC, "DESC" => SqlParser::YYSYMBOL_DESC}
+  YYLEX_USE_KEYWORD_TRIE = false
+  YYLEX_KEYWORD_CHILDREN = [] of Array(Int32)
+  YYLEX_KEYWORD_TOKEN = [] of Int32
 
 
   STATE_INITIAL = 0
@@ -1358,11 +1363,15 @@ class SqlParserLexer
       last_accept = -1
       last_index = start
       table = YYLEX_TABLES[@state]
+      row_map = YYLEX_ROW_MAP[@state]
+      use_row_map = !row_map.empty?
       accept = YYLEX_ACCEPTS[@state]
 
       while @index < @length
         byte = @bytes[@index]
-        next_state = table[dfa_state * YYLEX_ROW_WIDTH + byte]
+        byte_value = byte.to_i
+        row_index = use_row_map ? row_map[dfa_state] : dfa_state
+        next_state = table[row_index * YYLEX_ROW_WIDTH + byte_value]
         break if next_state < 0
         dfa_state = next_state
         @index += 1
@@ -1420,12 +1429,80 @@ class SqlParserLexer
 
 
   private def keyword_token(start : Int32, length : Int32)
-    keyword = String.new(@bytes[start, length])
+    return nil if length == 0
+    if YYLEX_USE_KEYWORD_TRIE
+      node = 0
+      idx = start
+      last = start + length
+      while idx < last
+        byte = @bytes[idx]
+        byte_value = byte.to_i
 
-    keyword = keyword.upcase
+        if byte >= 97_u8 && byte <= 122_u8
+          byte -= 32_u8
+          byte_value = byte.to_i
+        end
 
-    YYLEX_KEYWORD_MAP[keyword]?
+        children = YYLEX_KEYWORD_CHILDREN[node]
+        next_node = -1
+        i = 0
+        while i < children.size
+          if children[i] == byte_value
+            next_node = children[i + 1]
+            break
+          end
+          i += 2
+        end
+        return nil if next_node < 0
+        node = next_node
+        idx += 1
+      end
+      token = YYLEX_KEYWORD_TOKEN[node]
+      return token >= 0 ? token : nil
+    end
+
+    return SqlParser::YYSYMBOL_SELECT if keyword_match?(start, length, "SELECT")
+    return SqlParser::YYSYMBOL_DISTINCT if keyword_match?(start, length, "DISTINCT")
+    return SqlParser::YYSYMBOL_FROM if keyword_match?(start, length, "FROM")
+    return SqlParser::YYSYMBOL_WHERE if keyword_match?(start, length, "WHERE")
+    return SqlParser::YYSYMBOL_AND if keyword_match?(start, length, "AND")
+    return SqlParser::YYSYMBOL_OR if keyword_match?(start, length, "OR")
+    return SqlParser::YYSYMBOL_NOT if keyword_match?(start, length, "NOT")
+    return SqlParser::YYSYMBOL_AS if keyword_match?(start, length, "AS")
+    return SqlParser::YYSYMBOL_JOIN if keyword_match?(start, length, "JOIN")
+    return SqlParser::YYSYMBOL_LEFT if keyword_match?(start, length, "LEFT")
+    return SqlParser::YYSYMBOL_RIGHT if keyword_match?(start, length, "RIGHT")
+    return SqlParser::YYSYMBOL_INNER if keyword_match?(start, length, "INNER")
+    return SqlParser::YYSYMBOL_OUTER if keyword_match?(start, length, "OUTER")
+    return SqlParser::YYSYMBOL_ON if keyword_match?(start, length, "ON")
+    return SqlParser::YYSYMBOL_GROUP if keyword_match?(start, length, "GROUP")
+    return SqlParser::YYSYMBOL_BY if keyword_match?(start, length, "BY")
+    return SqlParser::YYSYMBOL_ORDER if keyword_match?(start, length, "ORDER")
+    return SqlParser::YYSYMBOL_LIMIT if keyword_match?(start, length, "LIMIT")
+    return SqlParser::YYSYMBOL_OFFSET if keyword_match?(start, length, "OFFSET")
+    return SqlParser::YYSYMBOL_ASC if keyword_match?(start, length, "ASC")
+    return SqlParser::YYSYMBOL_DESC if keyword_match?(start, length, "DESC")
+
+    nil
   end
+
+  private def keyword_match?(start : Int32, length : Int32, keyword : String)
+    return false unless length == keyword.bytesize
+    bytes = keyword.to_slice
+    i = 0
+    while i < length
+      byte = @bytes[start + i]
+
+      if byte >= 97_u8 && byte <= 122_u8
+        byte -= 32_u8
+      end
+
+      return false if byte != bytes[i]
+      i += 1
+    end
+    true
+  end
+
 
 
   private def parse_int(start : Int32, length : Int32)

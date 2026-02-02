@@ -161,6 +161,28 @@ module Lrama
         @grammar.lexer_spec.try(&.states) || ["INITIAL"]
       end
 
+      private def lexer_row_dedup
+        tables = lexer_tables
+        return [] of NamedTuple(rows: Array(Array(Int32)), map: Array(Int32)) unless tables
+        tables.tables.map do |table|
+          dedup_rows(table.transitions)
+        end
+      end
+
+      private def lexer_row_maps
+        tables = lexer_tables
+        return [] of Array(Int32) unless tables
+        return lexer_row_dedup.map { |entry| entry[:map] } if use_row_dedup?
+        Array.new(tables.tables.size) { [] of Int32 }
+      end
+
+      private def lexer_tables_flat
+        tables = lexer_tables
+        return [] of Array(Int32) unless tables
+        return lexer_row_dedup.map { |entry| flatten_table(entry[:rows]) } if use_row_dedup?
+        tables.tables.map { |table| flatten_table(table.transitions) }
+      end
+
       private def format_2d_array(values : Array(Array(Int32)))
         return "[] of Array(Int32)" if values.empty?
         rows = values.map do |row|
@@ -191,6 +213,26 @@ module Lrama
 
       private def flatten_table(rows : Array(Array(Int32)))
         rows.flat_map { |row| row }
+      end
+
+      private def dedup_rows(rows : Array(Array(Int32)))
+        unique = [] of Array(Int32)
+        map = [] of Int32
+        index = {} of Array(Int32) => Int32
+        rows.each do |row|
+          if existing = index[row]?
+            map << existing
+            next
+          end
+          new_index = unique.size
+          unique << row
+          index[row] = new_index
+          map << new_index
+        end
+        if unique.size == rows.size
+          return {rows: rows, map: [] of Int32}
+        end
+        {rows: unique, map: map}
       end
 
       private def value_kind_index(kind : LexerSpec::ValueKind)
@@ -224,6 +266,83 @@ module Lrama
           key = lexer_keywords_case_insensitive? ? name.upcase : name
           "\"#{key}\" => #{@class_name}::YYSYMBOL_#{name}"
         end.join(", ")
+      end
+
+      private def keyword_trie_children
+        return [] of Array(Int32) unless use_keyword_trie?
+        trie = keyword_trie
+        return [] of Array(Int32) unless trie
+        trie[:children]
+      end
+
+      private def keyword_trie_tokens
+        return [] of Int32 unless use_keyword_trie?
+        trie = keyword_trie
+        return [] of Int32 unless trie
+        trie[:tokens]
+      end
+
+      private def keyword_trie
+        keywords = lexer_keywords
+        return nil if keywords.empty?
+        nodes = [] of Hash(UInt8, Int32)
+        tokens = [] of Int32
+        nodes << {} of UInt8 => Int32
+        tokens << -1
+
+        keywords.each do |name|
+          key = lexer_keywords_case_insensitive? ? name.upcase : name
+          bytes = key.to_slice
+          node = 0
+          bytes.each do |byte|
+            child = nodes[node][byte]?
+            unless child
+              child = nodes.size
+              nodes[node][byte] = child
+              nodes << {} of UInt8 => Int32
+              tokens << -1
+            end
+            node = child
+          end
+          tokens[node] = keyword_token_id(name)
+        end
+
+        children = nodes.map do |entries|
+          entries.to_a.sort_by { |entry| entry[0] }.flat_map { |byte, child| [byte.to_i, child] }
+        end
+
+        {
+          children: children,
+          tokens:   tokens,
+        }
+      end
+
+      private def keyword_token_id(name : String)
+        symbol = @grammar.find_symbol_by_s_value!(name)
+        symbol.number || 0
+      end
+
+      private def use_keyword_trie?
+        default_value = false
+        define_bool("lexer.keyword_trie", default_value)
+      end
+
+      private def use_row_dedup?
+        default_value = false
+        define_bool("lexer.row_dedup", default_value)
+      end
+
+      private def define_bool(key : String, default_value : Bool)
+        value = @grammar.define[key]?
+        return default_value unless value
+        case value.downcase
+        when "1", "true", "yes", "on"
+          true
+        when "0", "false", "no", "off"
+          false
+        else
+          default_value
+        end
       end
 
       private def state_const_name(name : String)

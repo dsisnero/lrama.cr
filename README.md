@@ -45,6 +45,18 @@ Error recovery is controlled at codegen time:
 crystal run src/lrama/main.cr -- -e sample/calc.y -o sample/calc_parser.cr
 ```
 
+## Lexer Tuning
+
+By default the generated lexer uses fast tables and a byte-slice loop. For very
+large DFAs, you can opt into more compact tables or a keyword trie:
+
+```
+crystal run src/lrama/main.cr -- -Dlexer.row_dedup=true sample/calc.y -o sample/calc_parser.cr
+crystal run src/lrama/main.cr -- -Dlexer.keyword_trie=true sample/calc.y -o sample/calc_parser.cr
+```
+
+These settings trade a bit of speed for memory savings on large lexers.
+
 ## Layout
 
 - `src/` - Crystal implementation

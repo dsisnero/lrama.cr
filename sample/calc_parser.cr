@@ -427,6 +427,9 @@ class CalcParserLexer
   ]
   ]
   YYLEX_ROW_WIDTH = 256
+  YYLEX_ROW_MAP = [
+    [] of Int32
+  ]
   YYLEX_ACCEPTS = [
     [-1, 0, 2, 7, 8, 5, 3, 4, 6, 1]
   ]
@@ -461,11 +464,15 @@ class CalcParserLexer
       last_accept = -1
       last_index = start
       table = YYLEX_TABLES[@state]
+      row_map = YYLEX_ROW_MAP[@state]
+      use_row_map = !row_map.empty?
       accept = YYLEX_ACCEPTS[@state]
 
       while @index < @length
         byte = @bytes[@index]
-        next_state = table[dfa_state * YYLEX_ROW_WIDTH + byte]
+        byte_value = byte.to_i
+        row_index = use_row_map ? row_map[dfa_state] : dfa_state
+        next_state = table[row_index * YYLEX_ROW_WIDTH + byte_value]
         break if next_state < 0
         dfa_state = next_state
         @index += 1
