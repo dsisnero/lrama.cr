@@ -11,42 +11,44 @@ module Lrama
       end
 
       begin
-        text = options.y.gets_to_end
-        options.y.close unless options.y == STDIN
+        Profiler.run(options.profile_opts, err) do
+          text = options.y.gets_to_end
+          options.y.close unless options.y == STDIN
 
-        grammar_file = Lexer::GrammarFile.new(options.grammar_file, text)
-        grammar = GrammarParser.new(Lexer.new(grammar_file)).parse
-        Stdlib.merge_into(grammar)
-        grammar.prepare
-        grammar.validate!
+          grammar_file = Lexer::GrammarFile.new(options.grammar_file, text)
+          grammar = GrammarParser.new(Lexer.new(grammar_file)).parse
+          Stdlib.merge_into(grammar)
+          grammar.prepare
+          grammar.validate!
 
-        tracer = Tracer.new(err, options.trace_opts || {} of Symbol => Bool)
-        tracer.enable_duration
-        states = States.new(grammar, tracer)
-        states.compute
-        states.compute_ielr if grammar.ielr_defined?
+          tracer = Tracer.new(err, options.trace_opts || {} of Symbol => Bool)
+          tracer.enable_duration
+          states = States.new(grammar, tracer)
+          states.compute
+          states.compute_ielr if grammar.ielr_defined?
 
-        if report_file = options.report_file
-          reporter = Reporter.new(options.report_opts || {} of Symbol => Bool)
-          File.open(report_file, "w+") do |file|
-            reporter.report(file, states)
+          if report_file = options.report_file
+            reporter = Reporter.new(options.report_opts || {} of Symbol => Bool)
+            File.open(report_file, "w+") do |file|
+              reporter.report(file, states)
+            end
           end
-        end
 
-        if options.diagram?
-          File.open(options.diagram_file, "w+") do |file|
-            Diagram.render(io: file, grammar: grammar)
+          if options.diagram?
+            File.open(options.diagram_file, "w+") do |file|
+              Diagram.render(io: file, grammar: grammar)
+            end
           end
-        end
 
-        tables = TableBuilder.new(states, grammar).to_tables
-        class_name = parser_class_name(options.outfile)
-        File.open(options.outfile, "w+") do |file|
-          Generator::Crystal.new(grammar, tables, class_name, options.error_recovery?).render(file)
-        end
+          tables = TableBuilder.new(states, grammar).to_tables
+          class_name = parser_class_name(options.outfile)
+          File.open(options.outfile, "w+") do |file|
+            Generator::Crystal.new(grammar, tables, class_name, options.error_recovery?).render(file)
+          end
 
-        warnings = Warnings.new(Logger.new, options.warnings?)
-        warnings.warn(grammar, states)
+          warnings = Warnings.new(Logger.new, options.warnings?)
+          warnings.warn(grammar, states)
+        end
       rescue ex
         err.puts ex.message
         return 1
