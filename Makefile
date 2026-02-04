@@ -125,6 +125,7 @@ clean:
 	rm -rf log/*
 	rm -rf .crystal-cache
 	rm -f *.dwarf
+	rm -f samples/*_parser.cr
 	rm -f $(EXAMPLE_BINARIES)
 	@echo "Cleaned temp/, log/, .crystal-cache/, *.dwarf, and example binaries"
 
