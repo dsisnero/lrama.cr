@@ -57,12 +57,30 @@ crystal run src/lrama/main.cr -- -Dlexer.keyword_trie=true sample/calc.y -o samp
 
 These settings trade a bit of speed for memory savings on large lexers.
 
+For quick comparisons, use the microbench harness:
+
+```
+crystal run --release bench/bench.cr
+LRAMA_BENCH_GRAMMAR=path/to/grammar.y crystal run --release bench/bench.cr
+```
+
 ## Layout
 
 - `src/` - Crystal implementation
 - `spec/` - Crystal specs and fixtures
 - `docs/` - Architecture notes
 - `lrama/` - Ruby lrama submodule for reference
+- `racc/` - Ruby racc submodule for reference
+
+## Submodules
+
+Update the Ruby submodules via Make targets:
+
+```
+make update_lrama
+make update_racc
+make update_submodules
+```
 
 ## Docs
 
