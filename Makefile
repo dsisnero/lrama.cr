@@ -1,4 +1,4 @@
-.PHONY: build install spec spec-all spec-provider spec-provider-record spec-interactive clean format docs build-examples update_lrama update_racc update_submodules samples-crystal-gen samples-crystal-build samples-crystal-run samples-crystal samples-ruby-gen samples-ruby-build samples-ruby-run samples-ruby samples-all
+.PHONY: build install spec spec-all spec-provider spec-provider-record spec-interactive clean format docs build-examples update_lrama update_racc update_submodules samples-crystal-gen samples-crystal-build samples-crystal-run samples-crystal samples-ruby-gen samples-ruby-build samples-ruby-run samples-ruby samples-all run_benchmark
 
 # Crystal cache for faster builds
 export CRYSTAL_CACHE_DIR := $(PWD)/.crystal-cache
@@ -11,6 +11,7 @@ SAMPLES := calc json sql parse
 CRYSTAL_SAMPLE_DIR := samples
 RUBY_SAMPLE_DIR := lrama/sample
 TMP_DIR := temp
+BENCH_REPORT := benchmarks/perf_latest.md
 
 CRYSTAL_SAMPLE_PARSERS := $(SAMPLES:%=$(CRYSTAL_SAMPLE_DIR)/%_parser.cr)
 CRYSTAL_SAMPLE_BINS := $(SAMPLES:%=$(TMP_DIR)/%_parser)
@@ -108,6 +109,16 @@ $(TMP_DIR)/%_c: $(TMP_DIR)/%.c
 
 samples-all: samples-crystal samples-ruby
 
+run_benchmark: $(TMP_DIR)
+	@CRYSTAL_CACHE_DIR=$(CRYSTAL_CACHE_DIR) crystal run src/lrama/main.cr -- $(CRYSTAL_SAMPLE_DIR)/sql.y -o $(CRYSTAL_SAMPLE_DIR)/sql_parser.cr
+	@CRYSTAL_CACHE_DIR=$(CRYSTAL_CACHE_DIR) crystal build --release $(CRYSTAL_SAMPLE_DIR)/sql_parser.cr -o $(TMP_DIR)/sql_parser
+	@if [ ! -f samples/sql_input_big.sql ]; then \
+		ruby -e 'src = File.read("samples/sql_input.sql"); File.write("samples/sql_input_big.sql", src * 200)'; \
+	fi
+	@hyperfine --warmup 5 --min-runs 30 \
+	  "cat samples/sql_input_big.sql | $(TMP_DIR)/sql_parser >/dev/null" \
+	  "cat samples/sql_input_big.sql | $(TMP_DIR)/sql_c >/dev/null" | tee $(BENCH_REPORT)
+
 # Clean temporary files, logs, and build artifacts
 clean:
 	rm -rf temp/*
@@ -152,4 +163,5 @@ help:
 	@echo "  samples-crystal    - Generate/build/run Crystal sample parsers"
 	@echo "  samples-ruby       - Generate/build/run Ruby C sample parsers"
 	@echo "  samples-all        - Run Crystal and Ruby sample suites"
+	@echo "  run_benchmark      - Build samples and run hyperfine; write $(BENCH_REPORT)"
 	@echo "  help               - Show this help"
