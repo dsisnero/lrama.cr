@@ -11,6 +11,7 @@ module Lrama
       Float
       String
       Symbol
+      Slice
     end
 
     struct Rule
@@ -267,6 +268,8 @@ module Lrama
           ValueKind::String
         when "symbol"
           ValueKind::Symbol
+        when "slice"
+          ValueKind::Slice
         when ""
           ValueKind::None
         else

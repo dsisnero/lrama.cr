@@ -27,9 +27,9 @@ require "../src/lrama/runtime"
 %lexer {
   keywords case_insensitive SELECT DISTINCT FROM WHERE AND OR NOT AS JOIN LEFT RIGHT INNER OUTER ON GROUP BY ORDER LIMIT OFFSET ASC DESC
   skip /[ \t\r\n]+/
-  token STRING /'[^']*'/ string
-  token NUMBER /[0-9]+(?:\.[0-9]+)?/ string
-  token IDENT /[A-Za-z_][A-Za-z0-9_]*/ string keyword
+  token STRING /'[^']*'/ slice
+  token NUMBER /[0-9]+(?:\.[0-9]+)?/ slice
+  token IDENT /[A-Za-z_][A-Za-z0-9_]*/ slice keyword
   token COMMA ","
   token STAR "*"
   token SEMICOLON ";"
@@ -400,7 +400,14 @@ class SqlParser
   end
 
   def s(value : Lrama::Runtime::Value) : String
-    value.as(String)
+    case value
+    when String
+      value
+    when Slice(UInt8)
+      String.new(value)
+    else
+      value.to_s
+    end
   end
 
   def node(label : String, children : Array(String)) : String

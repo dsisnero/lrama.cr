@@ -331,7 +331,8 @@ module Lrama
         when LexerSpec::ValueKind::String
           3
         else
-          4
+          return 4 if kind == LexerSpec::ValueKind::Symbol
+          5
         end
       end
 

@@ -1,6 +1,6 @@
 module Lrama
   module Runtime
-    alias Value = Int32 | Int64 | Float32 | Float64 | Bool | String | Char | Symbol | Nil
+    alias Value = Int32 | Int64 | Float32 | Float64 | Bool | String | Char | Symbol | Slice(UInt8) | Nil
 
     struct Token
       getter sym : Int32

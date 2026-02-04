@@ -234,6 +234,8 @@ class <%= @class_name %>Lexer
         String.new(@bytes[start, length])
       when 4
         String.new(@bytes[start, length])
+      when 5
+        @bytes[start, length]
       else
         nil
       end
