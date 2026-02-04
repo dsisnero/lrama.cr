@@ -3,3 +3,4 @@ temp/
 .crystal-cache/
 bin/
 lib/
+samples/*_parser.cr
