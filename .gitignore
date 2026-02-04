@@ -1,2 +1,5 @@
 d:/
 temp/
+.crystal-cache/
+bin/
+lib/
