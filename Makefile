@@ -112,6 +112,10 @@ samples-all: samples-crystal samples-ruby
 run_benchmark: $(TMP_DIR)
 	@CRYSTAL_CACHE_DIR=$(CRYSTAL_CACHE_DIR) crystal run src/lrama/main.cr -- $(CRYSTAL_SAMPLE_DIR)/sql.y -o $(CRYSTAL_SAMPLE_DIR)/sql_parser.cr
 	@CRYSTAL_CACHE_DIR=$(CRYSTAL_CACHE_DIR) crystal build --release $(CRYSTAL_SAMPLE_DIR)/sql_parser.cr -o $(TMP_DIR)/sql_parser
+	@if [ ! -f $(TMP_DIR)/sql_c ]; then \
+		ruby lrama/exe/lrama -d lrama/sample/sql.y -o $(TMP_DIR)/sql.c; \
+		cc -Wall $(TMP_DIR)/sql.c -I . -o $(TMP_DIR)/sql_c; \
+	fi
 	@if [ ! -f samples/sql_input_big.sql ]; then \
 		ruby -e 'src = File.read("samples/sql_input.sql"); File.write("samples/sql_input_big.sql", src * 200)'; \
 	fi
