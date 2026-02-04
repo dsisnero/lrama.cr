@@ -33,6 +33,9 @@ module Lrama
         reset_stacks
         state = 0
         lookahead = nil.as(Token?)
+        repair_tokens = nil.as(Array(Token)?)
+        repair_index = 0
+        repair_backup = nil.as(Token?)
         parser_action = :push_state
         next_state = nil.as(Int32?)
         rule = nil.as(Int32?)
@@ -42,6 +45,16 @@ module Lrama
           when :syntax_error
             token = lookahead || Token.new(error_symbol)
             return 1 unless error_recovery?
+            if lookahead && repair_tokens.nil?
+              if terms = compute_repair_terms(lookahead.sym)
+                repair_tokens = terms.map { |sym| build_repair_token(sym) }
+                repair_backup = lookahead
+                repair_index = 0
+                lookahead = nil
+                parser_action = :decide_parser_action
+                next
+              end
+            end
             if @error_status == 3 && lookahead
               return 1 if lookahead.sym == eof_symbol
               lookahead = nil
@@ -81,6 +94,19 @@ module Lrama
               next
             end
 
+            if lookahead.nil?
+              if repair_tokens
+                if repair_index < repair_tokens.size
+                  lookahead = repair_tokens[repair_index]
+                  repair_index += 1
+                else
+                  lookahead = repair_backup
+                  repair_backup = nil
+                  repair_tokens = nil
+                  repair_index = 0
+                end
+              end
+            end
             lookahead ||= lexer.next_token
             token_sym = lookahead.sym
             if token_sym == error_symbol
@@ -181,6 +207,10 @@ module Lrama
       protected def on_error(_token : Token)
       end
 
+      protected def build_repair_token(sym : Int32) : Token
+        Token.new(sym)
+      end
+
       private def recover_from_error(token : Token)
         error_sym = error_symbol
 
@@ -200,6 +230,106 @@ module Lrama
           @value_stack.pop?
           @location_stack.pop?
         end
+      end
+
+      private def compute_repair_terms(lookahead_sym : Int32) : Array(Int32)?
+        return nil unless error_recovery?
+
+        max_repair = 3
+        queue = [] of Tuple(Array(Int32), Array(Int32))
+        queue << {@state_stack.dup, [] of Int32}
+
+        until queue.empty?
+          state_stack, terms = queue.shift
+          state = state_stack.last?
+          next unless state
+
+          offset = yypact[state]
+          next if offset == yypact_ninf
+
+          limit = yyntokens
+          token = 0
+          while token < limit
+            if token != error_symbol
+              idx = offset + token
+              if idx >= 0 && idx <= yylast && yycheck[idx] == token
+                if terms.size + 1 <= max_repair
+                  new_stack = state_stack.dup
+                  if process_repairs(new_stack, token)
+                    return terms if token == lookahead_sym
+                    queue << {new_stack, terms + [token]}
+                  end
+                end
+              end
+            end
+            token += 1
+          end
+        end
+
+        nil
+      end
+
+      private def process_repairs(state_stack : Array(Int32), token : Int32) : Bool
+        yystate = state_stack.last? || return false
+        yytoken = token
+
+        loop do
+          offset = yypact[yystate]
+          if offset == yypact_ninf
+            rule = yydefact[yystate]
+            return false if rule == 0
+            yystate = reduce_state(state_stack, rule)
+            return false unless yystate
+            next
+          end
+
+          idx = offset + yytoken
+          if idx < 0 || idx > yylast || yycheck[idx] != yytoken
+            rule = yydefact[yystate]
+            return false if rule == 0
+            yystate = reduce_state(state_stack, rule)
+            return false unless yystate
+            next
+          end
+
+          action = yytable[idx]
+          return false if action == yytable_ninf
+
+          if action > 0
+            state_stack << action
+            return true
+          end
+
+          rule = -action
+          yystate = reduce_state(state_stack, rule)
+          return false unless yystate
+        end
+      end
+
+      private def reduce_state(state_stack : Array(Int32), rule : Int32) : Int32?
+        rhs_length = yyr2[rule]
+        rhs_length.times { state_stack.pop? }
+        prev_state = state_stack.last?
+        return nil unless prev_state
+
+        lhs_symbol = yyr1[rule]
+        lhs_nterm = lhs_symbol - yyntokens
+
+        offset = yypgoto[lhs_nterm]
+        next_state =
+          if offset == yypact_ninf
+            yydefgoto[lhs_nterm]
+          else
+            idx = offset + prev_state
+            if idx < 0 || idx > yylast || yycheck[idx] != prev_state
+              yydefgoto[lhs_nterm]
+            else
+              yytable[idx]
+            end
+          end
+
+        state_stack << next_state
+        next_state
       end
 
       private def pop_values(count : Int32)

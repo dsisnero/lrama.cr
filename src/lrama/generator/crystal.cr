@@ -45,11 +45,17 @@ module Lrama
         @tables : Tables,
         @class_name : String = "Parser",
         @error_recovery : Bool = false,
+        @skeleton : String = "crystal/parser.ecr",
       )
       end
 
       def render(io : IO)
-        ECR.embed "#{__DIR__}/templates/parser.ecr", io
+        if @skeleton.empty? || @skeleton == "crystal/parser.ecr" || @skeleton == "parser.ecr"
+          ECR.embed "#{__DIR__}/templates/parser.ecr", io
+          return
+        end
+
+        raise "Custom skeletons are not supported for Crystal output. Use --skeleton=crystal/parser.ecr."
       end
 
       private def reduce_case(rule : Grammar::Rule, rule_id : Int32)
@@ -93,10 +99,28 @@ module Lrama
         translated
       end
 
+      private def translate_error_token(code : Lexer::Token::UserCode)
+        translated = code.s_value.dup
+        code.references.reverse_each do |ref|
+          translated = replace_error_token_reference(translated, ref)
+        end
+        translated
+      end
+
       private def replace_reference(code : String, rule : Grammar::Rule, ref : Grammar::Reference)
         start = ref.first_column
         finish = ref.last_column
         replacement = reference_to_crystal(rule, ref)
+        head = start > 0 ? (code.byte_slice(0, start) || "") : ""
+        tail_len = code.bytesize - finish
+        tail = tail_len > 0 ? (code.byte_slice(finish, tail_len) || "") : ""
+        "#{head}#{replacement}#{tail}"
+      end
+
+      private def replace_error_token_reference(code : String, ref : Grammar::Reference)
+        start = ref.first_column
+        finish = ref.last_column
+        replacement = error_token_reference_to_crystal(ref)
         head = start > 0 ? (code.byte_slice(0, start) || "") : ""
         tail_len = code.bytesize - finish
         tail = tail_len > 0 ? (code.byte_slice(finish, tail_len) || "") : ""
@@ -122,6 +146,25 @@ module Lrama
           index = ref.index || raise "Reference index missing. #{ref}"
           position_in_rhs = rule.position_in_original_rule_rhs || rule.rhs.size
           (index - position_in_rhs - 1).to_s
+        else
+          raise "Unexpected. #{self}, #{ref}"
+        end
+      end
+
+      private def error_token_reference_to_crystal(ref : Grammar::Reference)
+        case
+        when ref.type == :dollar && ref.name == "$"
+          "value"
+        when ref.type == :at && ref.name == "$"
+          "location"
+        when ref.type == :index && ref.name == "$"
+          raise "$:$ is not supported in %error-token"
+        when ref.type == :dollar
+          raise "$#{ref.value} is not supported in %error-token"
+        when ref.type == :at
+          raise "@#{ref.value} is not supported in %error-token"
+        when ref.type == :index
+          raise "$:#{ref.value} is not supported in %error-token"
         else
           raise "Unexpected. #{self}, #{ref}"
         end
@@ -159,6 +202,48 @@ module Lrama
 
       private def lexer_states
         @grammar.lexer_spec.try(&.states) || ["INITIAL"]
+      end
+
+      private def error_token_cases
+        cases = [] of String
+        @grammar.symbols.each do |sym|
+          next unless error_token = sym.error_token
+          output = IO::Memory.new
+          output.puts "    when #{sym.enum_name}"
+          output.puts "      value = nil"
+          output.puts "      location = nil"
+          translated = translate_error_token(error_token.token_code)
+          translated.each_line do |line|
+            line = line.rstrip
+            if line.empty?
+              output.puts
+            else
+              output.puts "      #{line}"
+            end
+          end
+          output.puts "      return Lrama::Runtime::Token.new(sym, value, location)"
+          cases << output.to_s
+        end
+        cases
+      end
+
+      private def parse_param_decl
+        build_param_decl(@grammar.parse_param, "%parse-param")
+      end
+
+      private def lex_param_decl
+        build_param_decl(@grammar.lex_param, "%lex-param")
+      end
+
+      private def build_param_decl(param : String?, label : String)
+        return unless param
+        stripped = param.strip
+        return if stripped.empty?
+
+        match = stripped.match(/\A([A-Za-z_]\w*)\s*:\s*(.+)\z/)
+        raise "Invalid #{label} format. Expected \"name : Type\"." unless match
+
+        {name: match[1], type: match[2].strip}
       end
 
       private def lexer_row_dedup

@@ -20,6 +20,9 @@ module Lrama
           Stdlib.merge_into(grammar)
           grammar.prepare
           grammar.validate!
+          if options.header?
+            raise "Header output (-d/-H) is not supported for Crystal output. Use the generated parser constants instead."
+          end
 
           tracer = Tracer.new(err, options.trace_opts || {} of Symbol => Bool)
           tracer.enable_duration
@@ -43,7 +46,13 @@ module Lrama
           tables = TableBuilder.new(states, grammar).to_tables
           class_name = parser_class_name(options.outfile)
           File.open(options.outfile, "w+") do |file|
-            Generator::Crystal.new(grammar, tables, class_name, options.error_recovery?).render(file)
+            Generator::Crystal.new(
+              grammar,
+              tables,
+              class_name,
+              options.error_recovery?,
+              options.skeleton
+            ).render(file)
           end
 
           warnings = Warnings.new(Logger.new, options.warnings?)

@@ -3,6 +3,9 @@
 <% end %>
 
 class <%= @class_name %> < Lrama::Runtime::Parser
+<% if parse_param = parse_param_decl %>
+  getter <%= parse_param[:name] %> : <%= parse_param[:type] %>
+<% end %>
 <% @grammar.symbols.sort_by { |sym| sym.number || 0 }.each do |sym| %>
   <%= sym.enum_name %> = <%= sym.number || 0 %>
 <% end %>
@@ -88,6 +91,25 @@ class <%= @class_name %> < Lrama::Runtime::Parser
   def error_recovery? : Bool
     ERROR_RECOVERY
   end
+<% if parse_param = parse_param_decl %>
+
+  def initialize(@<%= parse_param[:name] %> : <%= parse_param[:type] %>, @debug : Bool = false)
+    super(@debug)
+  end
+<% end %>
+<% error_cases = error_token_cases %>
+<% if !error_cases.empty? %>
+
+  protected def build_repair_token(sym : Int32) : Lrama::Runtime::Token
+    case sym
+<% error_cases.each do |error_case| %>
+<%= error_case %>
+<% end %>
+    else
+      Lrama::Runtime::Token.new(sym)
+    end
+  end
+<% end %>
 
   def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value
     case rule
@@ -105,6 +127,9 @@ end
 
 class <%= @class_name %>Lexer
   include Lrama::Runtime::Lexer
+<% if lex_param = lex_param_decl %>
+  getter <%= lex_param[:name] %> : <%= lex_param[:type] %>
+<% end %>
 
   YYLEX_TABLES = <%= format_flat_tables(lexer_tables_flat) %>
   YYLEX_ROW_WIDTH = 256
@@ -124,7 +149,7 @@ class <%= @class_name %>Lexer
   STATE_<%= state_const_name(name) %> = <%= index %>
   <% end %>
 
-  def initialize(@input : String)
+  def initialize(@input : String<% if lex_param = lex_param_decl %>, @<%= lex_param[:name] %> : <%= lex_param[:type] %><% end %>)
     @index = 0
     @bytes = @input.to_slice
     @length = @bytes.size
