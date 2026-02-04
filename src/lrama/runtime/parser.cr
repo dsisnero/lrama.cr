@@ -27,6 +27,17 @@ module Lrama
       abstract def eof_symbol : Int32
       abstract def reduce(rule : Int32, values : Array(Value), locations : Array(Location?)) : Value
       abstract def error_recovery? : Bool
+      abstract def has_locations? : Bool
+
+      protected def value_stack
+        @value_stack
+      end
+
+      protected def location_stack
+        @location_stack
+      end
+
+      private EMPTY_LOCATIONS = [] of Location?
 
       # ameba:disable Metrics/CyclomaticComplexity
       def parse(lexer : Lexer) : Int32
@@ -66,7 +77,7 @@ module Lrama
             if recovered_state = recover_from_error(token)
               state = recovered_state
               @value_stack << nil
-              @location_stack << token.location
+              @location_stack << token.location if has_locations?
               lookahead = nil if lookahead && lookahead.sym == error_symbol
               parser_action = :push_state
             else
@@ -144,7 +155,7 @@ module Lrama
             debug_print("shift #{token.sym}")
 
             @value_stack << token.value
-            @location_stack << token.location
+            @location_stack << token.location if has_locations?
             @error_status -= 1 if @error_status > 0
 
             lookahead = nil
@@ -164,16 +175,17 @@ module Lrama
             debug_print("reduce #{rule}")
 
             rhs_length = yyr2[rule]
-            rhs_values = pop_values(rhs_length)
-            rhs_locations = pop_locations(rhs_length)
+            stack_base = @value_stack.size - rhs_length
+            rhs_locations = has_locations? ? pop_locations(rhs_length) : EMPTY_LOCATIONS
             @state_stack.pop(rhs_length)
             state = @state_stack.last? || raise "state stack is empty after reduce"
 
             lhs_symbol = yyr1[rule]
             lhs_nterm = lhs_symbol - yyntokens
 
-            value = reduce(rule, rhs_values, rhs_locations)
-            location = reduce_location(rule, rhs_locations)
+            value = reduce(rule, @value_stack, rhs_locations)
+            location = has_locations? ? reduce_location(rule, rhs_locations) : nil
+            @value_stack.pop(rhs_length)
 
             offset = yypgoto[lhs_nterm]
             if offset == yypact_ninf
@@ -188,7 +200,7 @@ module Lrama
             end
 
             @value_stack << value
-            @location_stack << location
+            @location_stack << location if has_locations?
             rule = nil
             parser_action = :push_state
           else
@@ -228,7 +240,7 @@ module Lrama
 
           @state_stack.pop
           @value_stack.pop?
-          @location_stack.pop?
+          @location_stack.pop? if has_locations?
         end
       end
 

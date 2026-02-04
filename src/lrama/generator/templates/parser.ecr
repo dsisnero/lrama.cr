@@ -27,6 +27,7 @@ class <%= @class_name %> < Lrama::Runtime::Parser
   YYTABLE_NINF = <%= @tables.yytable_ninf %>
   YYFINAL = <%= @tables.yyfinal %>
   ERROR_RECOVERY = <%= @error_recovery ? "true" : "false" %>
+  HAS_LOCATIONS = <%= @grammar.locations? ? "true" : "false" %>
 
   def yypact : Array(Int32)
     YYPACT
@@ -91,6 +92,10 @@ class <%= @class_name %> < Lrama::Runtime::Parser
   def error_recovery? : Bool
     ERROR_RECOVERY
   end
+
+  def has_locations? : Bool
+    HAS_LOCATIONS
+  end
 <% if parse_param = parse_param_decl %>
 
   def initialize(@<%= parse_param[:name] %> : <%= parse_param[:type] %>, @debug : Bool = false)
@@ -112,6 +117,7 @@ class <%= @class_name %> < Lrama::Runtime::Parser
 <% end %>
 
   def reduce(rule : Int32, values : Array(Lrama::Runtime::Value), locations : Array(Lrama::Runtime::Location?)) : Lrama::Runtime::Value
+    stack_base = values.size - yyr2[rule]
     case rule
     when 0
       nil

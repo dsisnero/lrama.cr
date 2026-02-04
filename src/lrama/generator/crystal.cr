@@ -88,7 +88,7 @@ module Lrama
       end
 
       private def default_result(rule : Grammar::Rule)
-        rule.rhs.empty? ? "nil" : "values.last?"
+        rule.rhs.empty? ? "nil" : "value_stack[stack_base + #{rule.rhs.size - 1}]?"
       end
 
       private def translate_action(rule : Grammar::Rule, code : Lexer::Token::UserCode)
@@ -138,10 +138,10 @@ module Lrama
           raise "$:$ is not supported"
         when ref.type == :dollar
           index = ref.index || raise "Reference index missing. #{ref}"
-          "values[#{index - 1}]"
+          "value_stack[stack_base + #{index - 1}]"
         when ref.type == :at
           index = ref.index || raise "Reference index missing. #{ref}"
-          "locations[#{index - 1}]"
+          "location_stack[stack_base + #{index - 1}]"
         when ref.type == :index
           index = ref.index || raise "Reference index missing. #{ref}"
           position_in_rhs = rule.position_in_original_rule_rhs || rule.rhs.size
