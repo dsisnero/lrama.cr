@@ -4,3 +4,4 @@ temp/
 bin/
 lib/
 samples/*_parser.cr
+.beads/export-state
