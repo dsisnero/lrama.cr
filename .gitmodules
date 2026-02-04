@@ -4,3 +4,6 @@
 [submodule "racc"]
 	path = racc
 	url = https://github.com/ruby/racc.git
+[submodule "logos"]
+	path = logos
+	url = https://github.com/maciejhirsz/logos.git
